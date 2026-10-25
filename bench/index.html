@@ -1,0 +1,819 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GP-10 SysEx Bench</title>
+<style>
+:root {
+  --bg: #f3f2ee; --panel: #ffffff; --ink: #1d1e20; --muted: #6a6d73; --line: #dddcd5;
+  --accent: #b8860b; --accent-ink: #1d1e20; --ok: #2f7d4f; --warn: #a8551a; --err: #b3261e;
+  --in: #2a5fb0; --out: #8a5a00; --field: #fbfaf7; --row: #f7f6f2;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131416; --panel: #1c1e21; --ink: #e9e8e3; --muted: #9b9ea4; --line: #2e3135;
+    --accent: #e2b23c; --accent-ink: #131416; --ok: #5cc58a; --warn: #e39a5a; --err: #ef7a70;
+    --in: #7fa9ee; --out: #e2b23c; --field: #16181a; --row: #191b1e;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131416; --panel: #1c1e21; --ink: #e9e8e3; --muted: #9b9ea4; --line: #2e3135;
+  --accent: #e2b23c; --accent-ink: #131416; --ok: #5cc58a; --warn: #e39a5a; --err: #ef7a70;
+  --in: #7fa9ee; --out: #e2b23c; --field: #16181a; --row: #191b1e;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--sans); }
+header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+header h1 { font-size: 18px; margin: 0; letter-spacing: .02em; }
+header h1 b { color: var(--accent); }
+.sub { color: var(--muted); font-size: 12px; }
+.pill { margin-left: auto; font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.pill.ok { color: var(--ok); border-color: currentColor; }
+.pill.err { color: var(--err); border-color: currentColor; }
+main { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px; padding: 16px 20px 32px; max-width: 1400px; margin: 0 auto; }
+section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+section.wide { grid-column: 1 / -1; }
+h2 { font-size: 13px; margin: 0 0 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0; }
+label { font-size: 12px; color: var(--muted); }
+.field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+input[type=text], input[type=number], select, textarea {
+  font: 13px var(--mono); color: var(--ink); background: var(--field); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 8px; min-width: 0;
+}
+select { font-family: var(--sans); }
+textarea { width: 100%; resize: vertical; min-height: 64px; }
+input.hex4 { width: 120px; } input.hex1 { width: 52px; } input.num { width: 80px; }
+button {
+  font: 600 13px var(--sans); padding: 7px 12px; border-radius: 6px; border: 1px solid var(--line);
+  background: var(--field); color: var(--ink); cursor: pointer;
+}
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button:disabled { opacity: .45; cursor: not-allowed; }
+button:not(:disabled):hover { filter: brightness(1.06); }
+.check { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink); }
+.env { list-style: none; padding: 0; margin: 0; font-size: 13px; }
+.env li { display: flex; gap: 8px; padding: 3px 0; }
+.env .k { color: var(--muted); min-width: 140px; }
+.ok-t { color: var(--ok); } .err-t { color: var(--err); } .warn-t { color: var(--warn); }
+.result { font: 12px/1.6 var(--mono); background: var(--row); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; margin-top: 8px; white-space: pre-wrap; word-break: break-all; min-height: 38px; }
+.note { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
+.scanbar { height: 6px; background: var(--row); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+.scanbar > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .1s; }
+table { width: 100%; border-collapse: collapse; font: 12px var(--mono); }
+th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-family: var(--sans); }
+.scanres { max-height: 220px; overflow: auto; margin-top: 8px; }
+.dumpgrid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 12px; margin-top: 8px; }
+@media (max-width: 900px) { .dumpgrid { grid-template-columns: minmax(0, 1fr); } }
+h3 { font-size: 12px; margin: 0 0 6px; color: var(--muted); font-weight: 600; }
+.dump { font: 12px/1.55 var(--mono); background: var(--row); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; height: 420px; overflow: auto; white-space: pre; }
+.dump .bh { color: var(--accent); font-weight: 700; margin-top: 8px; }
+.dump .bh:first-child { margin-top: 0; }
+.dump .ad { color: var(--muted); }
+.dump b { font-weight: 400; }
+.dump b.ever { color: var(--warn); text-decoration: underline; }
+.dump b.chg { background: var(--accent); color: var(--accent-ink); font-weight: 700; border-radius: 2px; text-decoration: none; }
+.dump b.lab { outline: 1px solid var(--in); outline-offset: -1px; border-radius: 2px; cursor: help; }
+input.lbl { width: 100%; min-width: 110px; font: 12px var(--sans); padding: 3px 6px; }
+.maptable { max-height: 360px; overflow: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--row); margin-top: 8px; }
+.maptable td.v { color: var(--ink); }
+.maptable button { padding: 2px 8px; font-size: 12px; }
+.difftable { height: 420px; overflow: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--row); }
+#log { height: 380px; overflow: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--row); }
+#log table td.t { color: var(--muted); white-space: nowrap; }
+#log td.d { white-space: nowrap; font-weight: 700; }
+#log td.d.in { color: var(--in); } #log td.d.out { color: var(--out); } #log td.d.sys { color: var(--muted); }
+#log td.h { word-break: break-all; }
+#log td.n { font-family: var(--sans); color: var(--muted); }
+#log td.n.good { color: var(--ok); } #log td.n.bad { color: var(--err); }
+@media (max-width: 560px) {
+  header, main { padding-left: 16px; padding-right: 16px; }
+  main { grid-template-columns: 1fr; }
+  #log td.t { display: none; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1><b>GP-10</b> SysEx Bench</h1>
+  <span class="sub">Web MIDIでBOSS GP-10とのSysEx通信を確認する接続テストツール（RQ1は読み出しのみ）</span>
+  <span id="status" class="pill">未接続</span>
+</header>
+
+<main>
+  <section>
+    <h2>1. 環境とMIDIアクセス</h2>
+    <ul class="env" id="env"></ul>
+    <div class="row" style="margin-top:10px">
+      <button id="btnAccess" class="primary">MIDIに接続（SysEx許可）</button>
+    </div>
+    <p class="note">ChromeかEdgeで開いてください。SafariはWeb MIDI非対応です。GP-10はドライバの導入が必要です。</p>
+  </section>
+
+  <section>
+    <h2>2. ポート</h2>
+    <div class="row">
+      <div class="field" style="flex:1"><label for="selIn">入力（GP-10 → PC）</label><select id="selIn"></select></div>
+      <div class="field" style="flex:1"><label for="selOut">出力（PC → GP-10）</label><select id="selOut"></select></div>
+    </div>
+    <div class="row">
+      <label class="check"><input type="checkbox" id="chkHideRT" checked> クロック・Active Sensingを隠す</label>
+      <label class="check"><input type="checkbox" id="chkHideCh"> チャンネルメッセージを隠す</label>
+    </div>
+    <p class="note">「GP-10 DAW CTRL」ではなく「GP-10」を選びます。名前に GP-10 を含むポートは自動で選ばれます。</p>
+  </section>
+
+  <section>
+    <h2>3. Identity Request</h2>
+    <div class="row">
+      <button id="btnIdent" disabled>送信（F0 7E 7F 06 01 F7）</button>
+      <button id="btnUseFamily" disabled title="Identity返信のファミリーコード下位バイトからモデルIDを推定">モデルIDを推定して反映</button>
+    </div>
+    <div class="result" id="identRes">—</div>
+    <p class="note">返事が来れば、ケーブル・ドライバ・MIDI経路は生きています。</p>
+  </section>
+
+  <section>
+    <h2>4. Roland ヘッダ設定</h2>
+    <div class="row">
+      <div class="field"><label for="inDev">Device ID</label><input type="text" id="inDev" class="hex1" value="10"></div>
+      <div class="field"><label for="inModel">Model ID</label><input type="text" id="inModel" class="hex4" value="00 00 00 05"></div>
+      <div class="field"><label for="inTimeout">応答待ち(ms)</label><input type="number" id="inTimeout" class="num" value="400" min="50" step="50"></div>
+    </div>
+    <p class="note">GP-10 は Device ID <code>10</code>、Model ID <code>00 00 00 05</code> で実機応答を確認済みです（Identity返信のファミリーコード 05 03 とも一致）。Device ID 10 は工場出荷時の値です。</p>
+  </section>
+
+  <section>
+    <h2>5. RQ1（データ要求）</h2>
+    <div class="row">
+      <div class="field"><label for="inAddr">アドレス</label><input type="text" id="inAddr" class="hex4" value="00 00 00 00"></div>
+      <div class="field"><label for="inSize">サイズ</label><input type="text" id="inSize" class="hex4" value="00 00 00 10"></div>
+      <button id="btnRQ1" class="primary" disabled>RQ1を送信</button>
+    </div>
+    <div class="result" id="rq1Res">—</div>
+    <p class="note">返ってきたDT1のアドレス・データ・チェックサム検証・ASCII表示（パッチ名の確認用）を表示します。</p>
+  </section>
+
+  <section>
+    <h2>6. アドレススキャン（RQ1・読み出しのみ）</h2>
+    <div class="row">
+      <div class="field"><label for="inBase">ベースアドレス</label><input type="text" id="inBase" class="hex4" value="00 00 00 00"></div>
+      <div class="field"><label for="selByte">動かすバイト</label>
+        <select id="selByte"><option value="0">1バイト目</option><option value="1">2バイト目</option><option value="2">3バイト目</option><option value="3">4バイト目</option></select></div>
+      <div class="field"><label for="inFrom">開始</label><input type="text" id="inFrom" class="hex1" value="00"></div>
+      <div class="field"><label for="inTo">終了</label><input type="text" id="inTo" class="hex1" value="7F"></div>
+      <div class="field"><label for="inScanSize">サイズ</label><input type="text" id="inScanSize" class="hex4" value="00 00 00 01"></div>
+    </div>
+    <div class="row">
+      <button id="btnScan" disabled>スキャン開始</button>
+      <button id="btnStop" disabled>停止</button>
+      <span class="sub" id="scanInfo"></span>
+    </div>
+    <div class="scanbar"><i id="scanBar"></i></div>
+    <div class="scanres"><table><thead><tr><th>アドレス</th><th>サイズ</th><th>データ（先頭）</th><th>ASCII</th></tr></thead><tbody id="scanBody"></tbody></table></div>
+  </section>
+
+  <section>
+    <h2>7. 手入力SysEx</h2>
+    <textarea id="rawIn" spellcheck="false">F0 41 10 00 00 00 05 11 00 00 00 00 00 00 00 10 F7</textarea>
+    <div class="row">
+      <label class="check"><input type="checkbox" id="chkCs" checked> Rolandチェックサムを計算して付加（末尾のチェックサムとF7は付け直し）</label>
+    </div>
+    <div class="row">
+      <button id="btnRaw" disabled>送信</button>
+      <button id="btnPreview">プレビュー</button>
+    </div>
+    <div class="result" id="rawRes">—</div>
+    <p class="note">チェックサムは F0 41 [Dev] [Model] [Cmd] の後ろからを対象に計算します（Model ID の長さはヘッダ設定に従います）。DT1(12)を送ると本体の設定が書き換わるので注意してください。</p>
+  </section>
+
+  <section class="wide">
+    <h2>8. ダンプと差分（パラメータ位置の特定用）</h2>
+    <div class="row">
+      <div class="field"><label for="inDumpAddr">アドレス</label><input type="text" id="inDumpAddr" class="hex4" value="20 00 00 00"></div>
+      <div class="field"><label for="inDumpSize">サイズ</label><input type="text" id="inDumpSize" class="hex4" value="00 04 00 00"></div>
+      <div class="field"><label for="inQuiet">受信の区切り(ms)</label><input type="number" id="inQuiet" class="num" value="250" min="50" step="50"></div>
+      <button id="btnDump" class="primary" disabled>読み出し</button>
+      <label class="check"><input type="checkbox" id="chkPoll"> 1秒ごとに繰り返す</label>
+      <label class="check"><input type="checkbox" id="chkDumpQuiet" checked> ダンプの通信をログに出さない</label>
+      <button id="btnDiffClear">変化の記録をクリア</button>
+      <span class="sub" id="dumpInfo"></span>
+    </div>
+    <div class="dumpgrid">
+      <div><h3>ダンプ（黄色＝直前の読み出しから変化、下線＝一度でも変化）</h3><div id="dumpView" class="dump">—</div></div>
+      <div><h3>変化したバイト（新しい順）</h3>
+        <div class="difftable"><table><thead><tr><th>時刻</th><th>アドレス</th><th>ブロック+位置</th><th>前→後</th><th>名前</th></tr></thead><tbody id="diffBody"></tbody></table></div>
+      </div>
+    </div>
+    <p class="note">使い方: 読み出す → GP-10でつまみを1つ動かす → もう一度読み出す。前回と違うバイトが黄色になり、右の表に残ります。「1秒ごとに繰り返す」をオンにすると、つまみを回しながら変化を追えます。返ってきたDT1はパケットごとに「ブロック」として表示し、アドレスはRolandの7ビット計算で表示します。</p>
+  </section>
+
+  <section class="wide">
+    <h2>9. アドレスマップ（ラベル）</h2>
+    <div class="row">
+      <div class="field"><label for="inMapAddr">アドレス</label><input type="text" id="inMapAddr" class="hex4" placeholder="20 00 50 02"></div>
+      <div class="field" style="flex:1;min-width:160px"><label for="inMapName">名前</label><input type="text" id="inMapName" placeholder="AMP GAIN" style="font-family:var(--sans)"></div>
+      <div class="field"><label for="inMapLen">バイト数</label><input type="number" id="inMapLen" class="num" value="1" min="1" max="64"></div>
+      <button id="btnMapAdd">追加・更新</button>
+      <button id="btnMapExport" class="primary">JSONで書き出す</button>
+      <button id="btnMapImport">JSONを読み込む</button>
+      <input type="file" id="fileMap" accept="application/json,.json" hidden>
+      <span class="sub" id="mapInfo"></span>
+    </div>
+    <div class="maptable"><table><thead><tr><th>アドレス</th><th>名前</th><th>長さ</th><th>現在値</th><th>観測した範囲</th><th></th></tr></thead><tbody id="mapBody"></tbody></table></div>
+    <p class="note">変化表の「名前」欄に入力しても登録されます。ラベルを付けたバイトは、ダンプ上で青枠になり、マウスを乗せると名前が出ます。現在値と観測範囲は、8で読み出すたびに更新されます。マップはこのブラウザに保存されます。</p>
+  </section>
+
+  <section class="wide">
+    <h2>ログ</h2>
+    <div class="row">
+      <button id="btnClear">クリア</button>
+      <button id="btnCopy">コピー</button>
+      <button id="btnSave">テキストで保存</button>
+      <span class="sub" id="logCount">0件</span>
+    </div>
+    <div id="log"><table><thead><tr><th>時刻</th><th></th><th>データ</th><th>解釈</th></tr></thead><tbody id="logBody"></tbody></table></div>
+  </section>
+</main>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const S = { access: null, input: null, output: null, waiters: [], log: [], scanStop: false, scanning: false, lastIdent: null };
+  const LOG_MAX = 3000;
+
+  // ---------- helpers ----------
+  const h2 = (b) => b.toString(16).toUpperCase().padStart(2, '0');
+  const toHex = (arr) => Array.from(arr, h2).join(' ');
+  function parseHex(str) {
+    const clean = String(str).replace(/0x/gi, ' ').replace(/[^0-9a-fA-F]+/g, ' ').trim();
+    if (!clean) return [];
+    const out = [];
+    for (const t of clean.split(/\s+/)) {
+      if (t.length === 1) { out.push(parseInt(t, 16)); continue; }
+      if (t.length % 2) throw new Error(`桁数が奇数の値があります: ${t}`);
+      for (let i = 0; i < t.length; i += 2) out.push(parseInt(t.slice(i, i + 2), 16));
+    }
+    return out;
+  }
+  function hexN(id, n, label) {
+    const v = parseHex($(id).value);
+    if (v.length !== n) throw new Error(`${label}は${n}バイトで入力してください（現在${v.length}バイト）`);
+    if (v.some((b) => b > 0x7F)) throw new Error(`${label}に7Fを超える値があります`);
+    return v;
+  }
+  const checksum = (bytes) => (128 - (bytes.reduce((a, b) => a + b, 0) % 128)) % 128;
+  const ascii = (bytes) => bytes.map((b) => (b >= 0x20 && b < 0x7F ? String.fromCharCode(b) : '·')).join('');
+  const arrEq = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  function ts(d = new Date()) {
+    return d.toTimeString().slice(0, 8) + '.' + String(d.getMilliseconds()).padStart(3, '0');
+  }
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('gp10bench.' + k); return v === null ? d : v; } catch { return d; } },
+    set(k, v) { try { localStorage.setItem('gp10bench.' + k, v); } catch { /* ignore */ } },
+  };
+
+  function header() {
+    return { dev: hexN('inDev', 1, 'Device ID')[0], model: (() => {
+      const m = parseHex($('inModel').value);
+      if (!m.length || m.length > 6 || m.some((b) => b > 0x7F)) throw new Error('Model IDは1〜6バイトの16進で入力してください');
+      return m;
+    })() };
+  }
+  function buildRoland(cmd, body) {
+    const { dev, model } = header();
+    return [0xF0, 0x41, dev, ...model, cmd, ...body, checksum(body), 0xF7];
+  }
+  const IDENT_REQ = [0xF0, 0x7E, 0x7F, 0x06, 0x01, 0xF7];
+
+  // ---------- interpretation ----------
+  function parseIdentity(b) {
+    if (b.length < 15 || b[0] !== 0xF0 || b[1] !== 0x7E || b[3] !== 0x06 || b[4] !== 0x02) return null;
+    let i = 5; let man;
+    if (b[i] === 0x00) { man = [b[i], b[i + 1], b[i + 2]]; i += 3; } else { man = [b[i]]; i += 1; }
+    return { dev: b[2], man, family: [b[i], b[i + 1]], member: [b[i + 2], b[i + 3]], rev: b.slice(i + 4, i + 8) };
+  }
+  function parseRoland(b) {
+    if (b.length < 8 || b[0] !== 0xF0 || b[1] !== 0x41 || b[b.length - 1] !== 0xF7) return null;
+    let L0 = 4;
+    try { L0 = header().model.length; } catch { /* keep */ }
+    const tryLen = [L0, 4, 3, 1, 2, 5, 6].filter((v, i, a) => a.indexOf(v) === i);
+    for (const L of tryLen) {
+      const ci = 3 + L; const cmd = b[ci];
+      if (cmd !== 0x11 && cmd !== 0x12) continue;
+      const body = b.slice(ci + 1, b.length - 2); const cs = b[b.length - 2];
+      if (body.length < 4) continue;
+      const ok = checksum(body) === cs;
+      if (!ok && L !== L0) continue;
+      return { dev: b[2], model: b.slice(3, ci), cmd, addr: body.slice(0, 4), payload: body.slice(4), cs, ok };
+    }
+    return { dev: b[2], unknown: true };
+  }
+  function describeChannel(b) {
+    const st = b[0] & 0xF0, ch = (b[0] & 0x0F) + 1;
+    switch (st) {
+      case 0x80: return `Note Off ch${ch} ${b[1]} vel ${b[2]}`;
+      case 0x90: return `Note On ch${ch} ${b[1]} vel ${b[2]}`;
+      case 0xA0: return `Poly AT ch${ch} ${b[1]} = ${b[2]}`;
+      case 0xB0: return `CC ch${ch} #${b[1]} = ${b[2]}`;
+      case 0xC0: return `Program Change ch${ch} ${b[1] + 1}`;
+      case 0xD0: return `Channel AT ch${ch} = ${b[1]}`;
+      case 0xE0: return `Pitch Bend ch${ch} ${((b[2] << 7) | b[1]) - 8192}`;
+    }
+    return '';
+  }
+  function interpret(b) {
+    if (b[0] === 0xF0) {
+      const id = parseIdentity(b);
+      if (id) {
+        return { cls: 'good', text: `Identity Reply: Dev ${h2(id.dev)} / Maker ${toHex(id.man)}${id.man[0] === 0x41 ? ' (Roland)' : ''} / Family ${toHex(id.family)} / Member ${toHex(id.member)} / Rev ${toHex(id.rev)}` };
+      }
+      if (b[1] === 0x7E && b[3] === 0x06 && b[4] === 0x01) return { cls: '', text: 'Identity Request' };
+      const r = parseRoland(b);
+      if (r && !r.unknown) {
+        const name = r.cmd === 0x11 ? 'RQ1' : 'DT1';
+        const tail = r.cmd === 0x11 ? `size ${toHex(r.payload)}` : `${r.payload.length}バイト「${ascii(r.payload).slice(0, 32)}」`;
+        return { cls: r.ok ? 'good' : 'bad', text: `Roland ${name} Dev ${h2(r.dev)} Model ${toHex(r.model)} Addr ${toHex(r.addr)} ${tail} / checksum ${r.ok ? 'OK' : 'NG'}` };
+      }
+      if (r && r.unknown) return { cls: '', text: 'Roland SysEx（コマンド不明）' };
+      return { cls: '', text: 'SysEx' };
+    }
+    if (b[0] >= 0xF8) return { cls: '', text: ({ 0xF8: 'Clock', 0xFA: 'Start', 0xFB: 'Continue', 0xFC: 'Stop', 0xFE: 'Active Sensing', 0xFF: 'Reset' })[b[0]] || 'Realtime' };
+    return { cls: '', text: describeChannel(b) };
+  }
+
+  // ---------- log ----------
+  const logBody = $('logBody');
+  function addLog(dir, bytes, noteOverride) {
+    const it = noteOverride ? { cls: noteOverride.cls || '', text: noteOverride.text } : (bytes ? interpret(bytes) : { cls: '', text: '' });
+    const entry = { t: ts(), dir, hex: bytes ? toHex(bytes) : '', note: it.text, cls: it.cls };
+    S.log.push(entry);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="t"></td><td class="d ${dir}"></td><td class="h"></td><td class="n ${it.cls}"></td>`;
+    tr.children[0].textContent = entry.t;
+    tr.children[1].textContent = dir === 'in' ? '←' : dir === 'out' ? '→' : '•';
+    tr.children[2].textContent = entry.hex;
+    tr.children[3].textContent = entry.note;
+    const box = $('log');
+    const atBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 30;
+    logBody.appendChild(tr);
+    while (S.log.length > LOG_MAX) { S.log.shift(); logBody.firstChild && logBody.removeChild(logBody.firstChild); }
+    if (atBottom) box.scrollTop = box.scrollHeight;
+    $('logCount').textContent = `${S.log.length}件`;
+  }
+  const logText = () => S.log.map((e) => `${e.t}\t${e.dir === 'in' ? 'IN ' : e.dir === 'out' ? 'OUT' : 'SYS'}\t${e.hex}\t${e.note}`).join('\n');
+  $('btnClear').onclick = () => { S.log = []; logBody.innerHTML = ''; $('logCount').textContent = '0件'; };
+  $('btnCopy').onclick = async () => {
+    try { await navigator.clipboard.writeText(logText()); addLog('sys', null, { text: 'ログをクリップボードにコピーしました' }); }
+    catch (e) { addLog('sys', null, { cls: 'bad', text: 'コピーに失敗: ' + e.message }); }
+  };
+  $('btnSave').onclick = () => {
+    const d = new Date(); const p = (n) => String(n).padStart(2, '0');
+    const name = `gp10-sysex-log-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.txt`;
+    const env = `# GP-10 SysEx Bench log\n# UA: ${navigator.userAgent}\n# In: ${S.input ? S.input.name : '-'} / Out: ${S.output ? S.output.name : '-'}\n`;
+    const url = URL.createObjectURL(new Blob([env + logText() + '\n'], { type: 'text/plain' }));
+    const a = Object.assign(document.createElement('a'), { href: url, download: name });
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  // ---------- MIDI ----------
+  function setStatus(text, cls) { const s = $('status'); s.textContent = text; s.className = 'pill ' + (cls || ''); }
+  function renderEnv() {
+    const has = 'requestMIDIAccess' in navigator;
+    const ua = navigator.userAgent;
+    const browser = /Edg\//.test(ua) ? 'Edge' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : '不明';
+    const rows = [
+      ['ブラウザ', browser, browser === 'Chrome' || browser === 'Edge' ? 'ok' : 'warn'],
+      ['安全なコンテキスト', window.isSecureContext ? 'はい' : 'いいえ（HTTPSかlocalhostで開いてください）', window.isSecureContext ? 'ok' : 'err'],
+      ['Web MIDI API', has ? 'あり' : 'なし', has ? 'ok' : 'err'],
+      ['SysEx許可', S.access ? (S.access.sysexEnabled ? '許可済み' : '未許可') : '未要求', S.access ? (S.access.sysexEnabled ? 'ok' : 'err') : 'warn'],
+    ];
+    $('env').innerHTML = '';
+    for (const [k, v, c] of rows) {
+      const li = document.createElement('li');
+      li.innerHTML = `<span class="k"></span><span class="${c}-t"></span>`;
+      li.children[0].textContent = k; li.children[1].textContent = v;
+      $('env').appendChild(li);
+    }
+  }
+  function fillPorts() {
+    const fill = (sel, map, prevId) => {
+      const ports = Array.from(map.values());
+      sel.innerHTML = '';
+      const none = new Option('（選択なし）', ''); sel.add(none);
+      for (const p of ports) sel.add(new Option(`${p.name}${p.manufacturer ? ' — ' + p.manufacturer : ''}${p.state === 'disconnected' ? '（切断）' : ''}`, p.id));
+      let pick = ports.find((p) => p.id === prevId);
+      if (!pick) pick = ports.find((p) => /GP-?10/i.test(p.name) && !/DAW/i.test(p.name)) || ports.find((p) => /GP-?10/i.test(p.name));
+      sel.value = pick ? pick.id : '';
+    };
+    fill($('selIn'), S.access.inputs, S.input && S.input.id);
+    fill($('selOut'), S.access.outputs, S.output && S.output.id);
+    bindPorts();
+  }
+  function bindPorts() {
+    const inId = $('selIn').value, outId = $('selOut').value;
+    if (S.input && S.input.id !== inId) S.input.onmidimessage = null;
+    S.input = inId ? S.access.inputs.get(inId) : null;
+    S.output = outId ? S.access.outputs.get(outId) : null;
+    if (S.input) S.input.onmidimessage = onMessage;
+    const ready = !!S.output;
+    for (const id of ['btnIdent', 'btnRQ1', 'btnScan', 'btnRaw', 'btnDump']) $(id).disabled = !ready || (S.scanning && id !== 'btnStop');
+    if (S.input && S.output) setStatus(`接続: ${S.output.name}`, 'ok');
+    else if (S.access) setStatus(S.output ? '入力ポート未選択' : '出力ポート未選択', 'err');
+  }
+  async function requestAccess() {
+    if (!('requestMIDIAccess' in navigator)) { addLog('sys', null, { cls: 'bad', text: 'このブラウザはWeb MIDIに対応していません' }); return; }
+    try {
+      S.access = await navigator.requestMIDIAccess({ sysex: true });
+      S.access.onstatechange = (e) => { addLog('sys', null, { text: `ポート変化: ${e.port.name} (${e.port.type}) ${e.port.state}` }); fillPorts(); };
+      addLog('sys', null, { cls: 'good', text: `MIDIアクセス取得（SysEx ${S.access.sysexEnabled ? '許可' : '不許可'}）` });
+      fillPorts();
+      $('btnAccess').textContent = 'ポートを再読み込み';
+    } catch (e) {
+      addLog('sys', null, { cls: 'bad', text: `MIDIアクセス失敗: ${e.name} ${e.message}` });
+      setStatus('アクセス拒否', 'err');
+    }
+    renderEnv();
+  }
+  function send(bytes, quiet) {
+    if (!S.output) throw new Error('出力ポートが選ばれていません');
+    S.output.send(bytes);
+    if (!quiet) addLog('out', bytes);
+  }
+  function onMessage(e) {
+    const b = Array.from(e.data);
+    if ($('chkHideRT').checked && b.length === 1 && (b[0] === 0xF8 || b[0] === 0xFE)) return;
+    if ($('chkHideCh').checked && b[0] < 0xF0) return;
+    if (S.collector && b[0] === 0xF0 && b[1] === 0x41) {
+      const r = parseRoland(b);
+      if (r && !r.unknown && r.cmd === 0x12) {
+        S.collector.push(r);
+        if (S.collector && S.collector.quiet) return;
+      }
+    }
+    addLog('in', b);
+    for (const w of S.waiters.slice()) { if (w.match(b)) { S.waiters.splice(S.waiters.indexOf(w), 1); w.resolve(b); } }
+  }
+  function waitFor(match, ms) {
+    return new Promise((resolve) => {
+      const w = { match, resolve };
+      S.waiters.push(w);
+      setTimeout(() => { const i = S.waiters.indexOf(w); if (i >= 0) { S.waiters.splice(i, 1); resolve(null); } }, ms);
+    });
+  }
+  const timeoutMs = () => Math.max(50, parseInt($('inTimeout').value, 10) || 400);
+
+  async function rq1(addr, size) {
+    const msg = buildRoland(0x11, [...addr, ...size]);
+    const p = waitFor((b) => { const r = parseRoland(b); return r && !r.unknown && r.cmd === 0x12 && arrEq(r.addr, addr); }, timeoutMs());
+    send(msg);
+    const b = await p;
+    return b ? parseRoland(b) : null;
+  }
+
+  // ---------- UI actions ----------
+  $('btnAccess').onclick = () => (S.access ? fillPorts() : requestAccess());
+  $('selIn').onchange = bindPorts; $('selOut').onchange = bindPorts;
+
+  $('btnIdent').onclick = async () => {
+    $('identRes').textContent = '待機中…';
+    const p = waitFor((b) => !!parseIdentity(b), timeoutMs() + 600);
+    try { send(IDENT_REQ); } catch (e) { $('identRes').textContent = e.message; return; }
+    const b = await p;
+    if (!b) { $('identRes').innerHTML = '<span class="err-t">応答なし</span>'; S.lastIdent = null; $('btnUseFamily').disabled = true; return; }
+    const id = parseIdentity(b); S.lastIdent = id;
+    $('identRes').textContent = `Device ID : ${h2(id.dev)}\nメーカー  : ${toHex(id.man)}${id.man[0] === 0x41 ? '（Roland）' : ''}\nFamily    : ${toHex(id.family)}\nMember    : ${toHex(id.member)}\nRevision  : ${toHex(id.rev)}`;
+    $('btnUseFamily').disabled = false;
+  };
+  $('btnUseFamily').onclick = () => {
+    if (!S.lastIdent) return;
+    $('inModel').value = toHex([0, 0, 0, S.lastIdent.family[0]]);
+    $('inDev').value = h2(S.lastIdent.dev);
+    saveSettings();
+    addLog('sys', null, { text: `Model ID を ${$('inModel').value}、Device ID を ${$('inDev').value} に設定（推定）` });
+  };
+
+  $('btnRQ1').onclick = async () => {
+    let addr, size;
+    try { addr = hexN('inAddr', 4, 'アドレス'); size = hexN('inSize', 4, 'サイズ'); header(); }
+    catch (e) { $('rq1Res').textContent = e.message; return; }
+    $('rq1Res').textContent = '待機中…';
+    const r = await rq1(addr, size);
+    if (!r) { $('rq1Res').innerHTML = '<span class="err-t">応答なし（アドレス・Model ID・Device IDを確認）</span>'; return; }
+    $('rq1Res').textContent = `Addr     : ${toHex(r.addr)}\nModel    : ${toHex(r.model)}\nData(${r.payload.length}): ${toHex(r.payload)}\nASCII    : ${ascii(r.payload)}\nChecksum : ${h2(r.cs)} ${r.ok ? 'OK' : 'NG'}`;
+  };
+
+  $('btnScan').onclick = async () => {
+    let base, from, to, size, idx;
+    try {
+      base = hexN('inBase', 4, 'ベースアドレス'); size = hexN('inScanSize', 4, 'サイズ');
+      from = hexN('inFrom', 1, '開始')[0]; to = hexN('inTo', 1, '終了')[0]; idx = parseInt($('selByte').value, 10);
+      header();
+      if (to < from) throw new Error('終了は開始以上にしてください');
+    } catch (e) { $('scanInfo').textContent = e.message; return; }
+    S.scanning = true; S.scanStop = false;
+    $('btnStop').disabled = false; $('btnScan').disabled = true; $('btnRQ1').disabled = true; $('btnIdent').disabled = true; $('btnRaw').disabled = true; $('btnDump').disabled = true;
+    $('scanBody').innerHTML = '';
+    let hits = 0; const total = to - from + 1;
+    for (let v = from; v <= to && !S.scanStop; v++) {
+      const addr = base.slice(); addr[idx] = v;
+      const r = await rq1(addr, size);
+      if (r) {
+        hits++;
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td></td><td></td><td></td><td></td>';
+        tr.children[0].textContent = toHex(addr); tr.children[1].textContent = String(r.payload.length);
+        tr.children[2].textContent = toHex(r.payload.slice(0, 16)) + (r.payload.length > 16 ? ' …' : '');
+        tr.children[3].textContent = ascii(r.payload.slice(0, 16));
+        $('scanBody').appendChild(tr);
+      }
+      const done = v - from + 1;
+      $('scanBar').style.width = (done / total * 100).toFixed(1) + '%';
+      $('scanInfo').textContent = `${done}/${total} 応答 ${hits}件`;
+      await sleep(20);
+    }
+    addLog('sys', null, { cls: hits ? 'good' : '', text: `スキャン${S.scanStop ? '中断' : '完了'}: 応答 ${hits}件` });
+    S.scanning = false; $('btnStop').disabled = true; bindPorts();
+  };
+  $('btnStop').onclick = () => { S.scanStop = true; };
+
+  function buildRaw() {
+    let b = parseHex($('rawIn').value);
+    if (!b.length) throw new Error('バイト列が空です');
+    if (b.some((x) => x > 0xFF)) throw new Error('値が大きすぎます');
+    if ($('chkCs').checked) {
+      if (b[0] !== 0xF0 || b[1] !== 0x41) throw new Error('チェックサム付加は F0 41 で始まるRoland形式のみ対応です');
+      const L = header().model.length;
+      const bodyStart = 4 + L;
+      if (b[b.length - 1] === 0xF7) b = b.slice(0, -1);
+      let body = b.slice(bodyStart);
+      // 末尾が既存チェックサムなら外す（RQ1=アドレス4+サイズ4の8バイト想定で9バイトある場合など）
+      const cmd = b[3 + L];
+      if (cmd === 0x11 && body.length === 9) body = body.slice(0, 8);
+      if (cmd === 0x12 && body.length > 4 && checksum(body.slice(0, -1)) === body[body.length - 1]) body = body.slice(0, -1);
+      b = [...b.slice(0, bodyStart), ...body, checksum(body), 0xF7];
+    }
+    const inner = b.slice(1, b[b.length - 1] === 0xF7 ? -1 : undefined);
+    if (b[0] === 0xF0 && inner.some((x) => x > 0x7F)) throw new Error('SysEx内に7Fを超えるデータバイトがあります');
+    return b;
+  }
+  $('btnPreview').onclick = () => { try { const b = buildRaw(); $('rawRes').textContent = toHex(b) + '\n' + interpret(b).text; } catch (e) { $('rawRes').textContent = e.message; } };
+  $('btnRaw').onclick = () => { try { const b = buildRaw(); send(b); $('rawRes').textContent = '送信: ' + toHex(b); } catch (e) { $('rawRes').textContent = e.message; } };
+
+  // ---------- dump & diff ----------
+  const addrToInt = (a) => ((a[0] << 21) | (a[1] << 14) | (a[2] << 7) | a[3]) >>> 0;
+  const intToAddr = (n) => [(n >>> 21) & 0x7F, (n >>> 14) & 0x7F, (n >>> 7) & 0x7F, n & 0x7F];
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  S.dumpPrev = null; S.ever = new Set(); S.dumping = false; S.polling = false; S.diffRows = 0;
+
+  function collectDump(addr, size, quietMs, quiet) {
+    return new Promise((resolve) => {
+      const blocks = new Map(); let timer = null, hard = null;
+      const finish = () => { clearTimeout(timer); clearTimeout(hard); S.collector = null; resolve(blocks); };
+      S.collector = {
+        quiet,
+        push(r) { blocks.set(toHex(r.addr), { addr: r.addr, data: r.payload, ok: r.ok }); clearTimeout(timer); timer = setTimeout(finish, quietMs); },
+      };
+      timer = setTimeout(finish, Math.max(quietMs, timeoutMs()));
+      hard = setTimeout(finish, 8000);
+      try { send(buildRoland(0x11, [...addr, ...size]), quiet); } catch (e) { finish(); throw e; }
+    });
+  }
+  function diffBlocks(prev, cur) {
+    const out = [];
+    if (!prev) return out;
+    for (const [k, blk] of cur) {
+      const p = prev.get(k); if (!p) continue;
+      const n = Math.max(p.data.length, blk.data.length);
+      for (let i = 0; i < n; i++) if (p.data[i] !== blk.data[i]) out.push({ k, addr: blk.addr, off: i, old: p.data[i], now: blk.data[i] });
+    }
+    return out;
+  }
+  function renderDump(blocks, changed) {
+    if (!blocks.size) { $('dumpView').textContent = '応答なし'; return; }
+    const keys = Array.from(blocks.keys()).sort((a, b) => addrToInt(parseHex(a)) - addrToInt(parseHex(b)));
+    let html = '';
+    for (const k of keys) {
+      const blk = blocks.get(k); const base = addrToInt(blk.addr);
+      html += `<div class="bh">Block ${k}（${blk.data.length}バイト${blk.ok ? '' : '・checksum NG'}）</div>`;
+      for (let r = 0; r < blk.data.length; r += 16) {
+        const row = blk.data.slice(r, r + 16);
+        const cells = row.map((v, j) => {
+          const id = `${k}|${r + j}`;
+          let cls = changed.has(id) ? 'chg' : S.ever.has(id) ? 'ever' : '';
+          const lab = S.labelIndex.get(toHex(intToAddr(base + r + j)));
+          if (lab) cls += ' lab';
+          return `<b class="${cls}"${lab ? ` title="${esc(lab)}"` : ''}>${h2(v)}</b>`;
+        }).join(' ') + '   '.repeat(16 - row.length);
+        const asc = row.map((v, j) => {
+          const id = `${k}|${r + j}`; const cls = changed.has(id) ? 'chg' : S.ever.has(id) ? 'ever' : '';
+          return `<b class="${cls}">${esc(v >= 0x20 && v < 0x7F ? String.fromCharCode(v) : '·')}</b>`;
+        }).join('');
+        html += `<div><span class="ad">${toHex(intToAddr(base + r))}  +${String(r).padStart(3, '0')}</span>  ${cells}  ${asc}</div>`;
+      }
+    }
+    const box = $('dumpView'); const st = box.scrollTop;
+    box.innerHTML = html; box.scrollTop = st;
+  }
+  function addDiffRows(changes) {
+    const t = ts(); const body = $('diffBody');
+    for (const c of changes.slice().reverse()) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td></td><td></td><td></td><td></td><td><input type="text" class="lbl" placeholder="名前を付ける"></td>';
+      const fmt = (v) => (v === undefined ? '—' : `${h2(v)}(${v})`);
+      const lin = toHex(intToAddr(addrToInt(c.addr) + c.off));
+      tr.children[0].textContent = t;
+      tr.children[1].textContent = lin;
+      tr.children[2].textContent = `${c.k} +${c.off}`;
+      tr.children[3].textContent = `${fmt(c.old)} → ${fmt(c.now)}`;
+      const inp = tr.querySelector('input');
+      inp.dataset.addr = lin;
+      inp.value = S.labelIndex.get(lin) || '';
+      inp.addEventListener('change', () => {
+        const name = inp.value.trim();
+        if (name) setLabel(lin, name, (S.map[lin] && S.map[lin].len) || 1); else removeLabel(lin);
+      });
+      body.insertBefore(tr, body.firstChild);
+      S.diffRows++;
+    }
+    while (body.children.length > 1000) body.removeChild(body.lastChild);
+  }
+  async function doDump() {
+    if (S.dumping) return;
+    let addr, size;
+    try { addr = hexN('inDumpAddr', 4, 'アドレス'); size = hexN('inDumpSize', 4, 'サイズ'); header(); }
+    catch (e) { $('dumpInfo').textContent = e.message; return false; }
+    const quietMs = Math.max(50, parseInt($('inQuiet').value, 10) || 250);
+    S.dumping = true;
+    try {
+      const blocks = await collectDump(addr, size, quietMs, $('chkDumpQuiet').checked);
+      const sameReq = S.dumpPrevKey === toHex(addr) + '/' + toHex(size);
+      const changes = sameReq ? diffBlocks(S.dumpPrev, blocks) : [];
+      if (!sameReq) S.ever = new Set();
+      const changed = new Set(changes.map((c) => `${c.k}|${c.off}`));
+      for (const id of changed) S.ever.add(id);
+      renderDump(blocks, changed);
+      if (changes.length) addDiffRows(changes);
+      updateObserved(blocks);
+      const total = Array.from(blocks.values()).reduce((a, b) => a + b.data.length, 0);
+      $('dumpInfo').textContent = blocks.size
+        ? `${ts()} ${blocks.size}ブロック ${total}バイト / ${sameReq && S.dumpPrev ? `前回から${changes.length}バイト変化` : '比較元として保存'}`
+        : `${ts()} 応答なし`;
+      if (blocks.size) { S.dumpPrev = blocks; S.dumpPrevKey = toHex(addr) + '/' + toHex(size); }
+      return true;
+    } catch (e) {
+      $('dumpInfo').textContent = e.message; return false;
+    } finally { S.dumping = false; }
+  }
+  $('btnDump').onclick = () => doDump();
+  $('chkPoll').onchange = async () => {
+    if (!$('chkPoll').checked || S.polling) return;
+    S.polling = true;
+    while ($('chkPoll').checked && S.output) {
+      if (await doDump() === false) break;
+      await sleep(1000);
+    }
+    S.polling = false; $('chkPoll').checked = false;
+  };
+  $('btnDiffClear').onclick = () => { $('diffBody').innerHTML = ''; S.ever = new Set(); S.diffRows = 0; if (S.dumpPrev) renderDump(S.dumpPrev, new Set()); };
+
+  // ---------- address map (labels) ----------
+  const SEED_MAP = {
+    '20 00 00 00': { name: 'PATCH NAME（現在のパッチ・12文字）', len: 12 },
+    '20 00 50 01': { name: 'AMP TYPE', len: 1 },
+    '20 00 50 02': { name: 'AMP GAIN', len: 1 },
+  };
+  S.map = {}; S.obs = {}; S.labelIndex = new Map();
+  try { const raw = localStorage.getItem('gp10bench.map'); S.map = raw ? JSON.parse(raw) : { ...SEED_MAP }; } catch { S.map = { ...SEED_MAP }; }
+  const saveMap = () => { try { localStorage.setItem('gp10bench.map', JSON.stringify(S.map)); } catch { /* ignore */ } };
+  function normAddr(str) {
+    const a = parseHex(str);
+    if (a.length !== 4 || a.some((b) => b > 0x7F)) throw new Error('アドレスは7ビット値4バイトで入力してください');
+    return toHex(a);
+  }
+  function rebuildIndex() {
+    S.labelIndex = new Map();
+    for (const [addr, m] of Object.entries(S.map)) {
+      const base = addrToInt(parseHex(addr));
+      for (let i = 0; i < (m.len || 1); i++) S.labelIndex.set(toHex(intToAddr(base + i)), m.name + ((m.len || 1) > 1 ? ` [${i}]` : ''));
+    }
+  }
+  function setLabel(addr, name, len) {
+    S.map[addr] = { ...(S.map[addr] || {}), name, len: Math.max(1, len | 0) };
+    saveMap(); rebuildIndex(); renderMap();
+    if (S.dumpPrev) { updateObserved(S.dumpPrev); renderDump(S.dumpPrev, new Set()); }
+  }
+  function removeLabel(addr) {
+    delete S.map[addr]; delete S.obs[addr];
+    saveMap(); rebuildIndex(); renderMap();
+    if (S.dumpPrev) renderDump(S.dumpPrev, new Set());
+  }
+  function byteAt(blocks, lin) {
+    for (const blk of blocks.values()) {
+      const base = addrToInt(blk.addr);
+      if (lin >= base && lin < base + blk.data.length) return blk.data[lin - base];
+    }
+    return undefined;
+  }
+  function updateObserved(blocks) {
+    for (const [addr, m] of Object.entries(S.map)) {
+      const base = addrToInt(parseHex(addr));
+      const vals = [];
+      for (let i = 0; i < (m.len || 1); i++) vals.push(byteAt(blocks, base + i));
+      if (vals.some((v) => v === undefined)) continue;
+      const o = S.obs[addr] || { min: null, max: null };
+      o.last = vals;
+      if ((m.len || 1) === 1) { o.min = o.min === null ? vals[0] : Math.min(o.min, vals[0]); o.max = o.max === null ? vals[0] : Math.max(o.max, vals[0]); }
+      S.obs[addr] = o;
+    }
+    renderMap();
+  }
+  function renderMap() {
+    const body = $('mapBody'); body.innerHTML = '';
+    const keys = Object.keys(S.map).sort((a, b) => addrToInt(parseHex(a)) - addrToInt(parseHex(b)));
+    for (const addr of keys) {
+      const m = S.map[addr]; const o = S.obs[addr];
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td></td><td></td><td></td><td class="v"></td><td></td><td><button type="button">削除</button></td>';
+      tr.children[0].textContent = addr;
+      tr.children[1].textContent = m.name;
+      tr.children[2].textContent = String(m.len || 1);
+      let cur = '—';
+      if (o && o.last) cur = (m.len || 1) === 1 ? `${o.last[0]}（${h2(o.last[0])}）` : (o.last.every((v) => v >= 0x20 && v < 0x7F) ? `「${ascii(o.last)}」` : toHex(o.last));
+      tr.children[3].textContent = cur;
+      tr.children[4].textContent = o && o.min !== null && o.min !== undefined ? `${o.min} 〜 ${o.max}` : '—';
+      tr.querySelector('button').onclick = () => removeLabel(addr);
+      tr.children[1].style.cursor = 'pointer';
+      tr.children[1].title = 'クリックで上の入力欄に読み込み';
+      tr.children[1].onclick = () => { $('inMapAddr').value = addr; $('inMapName').value = m.name; $('inMapLen').value = m.len || 1; };
+      body.appendChild(tr);
+    }
+    $('mapInfo').textContent = `${keys.length}件`;
+  }
+  $('btnMapAdd').onclick = () => {
+    try {
+      const addr = normAddr($('inMapAddr').value); const name = $('inMapName').value.trim();
+      if (!name) throw new Error('名前を入力してください');
+      setLabel(addr, name, parseInt($('inMapLen').value, 10) || 1);
+      $('inMapName').value = '';
+    } catch (e) { $('mapInfo').textContent = e.message; }
+  };
+  $('btnMapExport').onclick = () => {
+    const keys = Object.keys(S.map).sort((a, b) => addrToInt(parseHex(a)) - addrToInt(parseHex(b)));
+    let dev = '10', model = '00 00 00 05';
+    try { dev = $('inDev').value.trim(); model = $('inModel').value.trim(); } catch { /* keep */ }
+    const out = {
+      format: 'gp10-sysex-bench/address-map', version: 1, exported: new Date().toISOString(),
+      device: { name: 'BOSS GP-10', deviceId: dev, modelId: model },
+      layout: {
+        tempPatch: '20 00 00 00',
+        userPatch: 'パッチp(1〜99) = 20 00 00 00 から2バイト目を 4p 進めた位置（7ビット繰り上がり）',
+        patchSubAreas: ['+0 00 00', '+1 00 00', '+2 00 00'],
+        programChange: 'B0 00 00 / B0 20 00 / C0 (p-1)',
+      },
+      params: keys.map((addr) => {
+        const m = S.map[addr]; const o = S.obs[addr] || {};
+        return { addr, name: m.name, len: m.len || 1, observedMin: o.min ?? null, observedMax: o.max ?? null, lastValue: o.last ?? null };
+      }),
+    };
+    const url = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2) + '\n'], { type: 'application/json' }));
+    const a = Object.assign(document.createElement('a'), { href: url, download: 'gp10-address-map.json' });
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  $('btnMapImport').onclick = () => $('fileMap').click();
+  $('fileMap').onchange = async () => {
+    const file = $('fileMap').files[0]; if (!file) return;
+    try {
+      const j = JSON.parse(await file.text());
+      const list = Array.isArray(j.params) ? j.params : [];
+      let n = 0;
+      for (const p of list) { try { S.map[normAddr(p.addr)] = { name: String(p.name || ''), len: Math.max(1, p.len | 0) }; n++; } catch { /* skip */ } }
+      saveMap(); rebuildIndex(); renderMap();
+      if (S.dumpPrev) renderDump(S.dumpPrev, new Set());
+      $('mapInfo').textContent = `${n}件を読み込みました`;
+    } catch (e) { $('mapInfo').textContent = '読み込み失敗: ' + e.message; }
+    $('fileMap').value = '';
+  };
+  rebuildIndex(); renderMap();
+
+  // ---------- settings ----------
+  const persisted = ['inDev', 'inModel', 'inTimeout', 'inAddr', 'inSize', 'inBase', 'inFrom', 'inTo', 'inScanSize', 'rawIn', 'inDumpAddr', 'inDumpSize', 'inQuiet'];
+  function saveSettings() { for (const id of persisted) store.set(id, $(id).value); }
+  for (const id of persisted) { $(id).value = store.get(id, $(id).value); $(id).addEventListener('change', saveSettings); }
+
+  // expose for testing
+  window.__gp10 = { checksum, parseHex, buildRoland, parseRoland, parseIdentity, interpret, addrToInt, intToAddr };
+
+  renderEnv();
+  addLog('sys', null, { text: '「MIDIに接続」を押してください' });
+})();
+</script>
+</body>
+</html>

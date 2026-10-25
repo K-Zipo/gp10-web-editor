@@ -1,0 +1,763 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GP-10 Web Editor</title>
+<style>
+:root {
+  --bg: #efeee9; --panel: #ffffff; --panel2: #f7f6f1; --ink: #1c1d1f; --muted: #6b6d72; --line: #dcdbd3;
+  --accent: #d8a623; --accent-deep: #a77a06; --accent-ink: #1c1d1f; --on: #2f8f57; --off: #9a9ca1; --err: #b3261e; --warn: #a8551a;
+  --track: #dedcd3; --fill: #d8a623; --chip: #f4f3ee;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121315; --panel: #1b1d20; --panel2: #16181b; --ink: #ebeae5; --muted: #9c9fa5; --line: #2d3034;
+    --accent: #e6b83a; --accent-deep: #f0c95c; --accent-ink: #121315; --on: #5cc58a; --off: #6c7076; --err: #ef7a70; --warn: #e39a5a;
+    --track: #2e3135; --fill: #e6b83a; --chip: #202327;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121315; --panel: #1b1d20; --panel2: #16181b; --ink: #ebeae5; --muted: #9c9fa5; --line: #2d3034;
+  --accent: #e6b83a; --accent-deep: #f0c95c; --accent-ink: #121315; --on: #5cc58a; --off: #6c7076; --err: #ef7a70; --warn: #e39a5a;
+  --track: #2e3135; --fill: #e6b83a; --chip: #202327;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.45 var(--sans); }
+button, select, input { font: inherit; color: inherit; }
+button { border: 1px solid var(--line); background: var(--panel); border-radius: 7px; padding: 6px 12px; cursor: pointer; font-weight: 600; font-size: 13px; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .45; cursor: not-allowed; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+select, input[type=text], input[type=number] { background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; min-width: 0; }
+.app { display: grid; grid-template-rows: auto 1fr; height: 100%; }
+header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.brand { font-weight: 800; letter-spacing: .02em; font-size: 16px; white-space: nowrap; }
+.brand b { color: var(--accent-deep); }
+.pill { font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.pill.ok { color: var(--on); border-color: currentColor; }
+.pill.err { color: var(--err); border-color: currentColor; }
+.pill.busy { color: var(--warn); border-color: currentColor; }
+.spacer { flex: 1; }
+.check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap; }
+details.ports { position: relative; }
+details.ports summary { list-style: none; cursor: pointer; font-size: 13px; color: var(--muted); padding: 6px 8px; border-radius: 6px; }
+details.ports summary::-webkit-details-marker { display: none; }
+details.ports[open] summary { color: var(--ink); }
+.portbox { position: absolute; right: 0; top: 36px; z-index: 20; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; width: 320px; box-shadow: 0 8px 30px rgba(0,0,0,.18); display: grid; gap: 8px; }
+.portbox label { font-size: 12px; color: var(--muted); display: grid; gap: 3px; }
+.main { display: grid; grid-template-columns: 250px minmax(0, 1fr); min-height: 0; }
+aside { border-right: 1px solid var(--line); background: var(--panel2); display: flex; flex-direction: column; min-height: 0; }
+.aside-head { padding: 10px 12px; display: flex; gap: 8px; align-items: center; border-bottom: 1px solid var(--line); }
+.aside-head h2 { margin: 0; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); flex: 1; }
+#patchList { list-style: none; margin: 0; padding: 4px 0; overflow: auto; flex: 1; }
+#patchList li { display: flex; gap: 8px; padding: 4px 12px; cursor: pointer; font-size: 13px; align-items: baseline; }
+#patchList li:hover { background: var(--chip); }
+#patchList li.cur { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+#patchList li .no { font-family: var(--mono); font-size: 12px; color: var(--muted); width: 22px; text-align: right; }
+#patchList li.cur .no { color: inherit; }
+#patchList .empty { color: var(--muted); padding: 12px; font-size: 13px; cursor: default; }
+.content { overflow: auto; min-height: 0; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 16px; display: grid; gap: 14px; }
+#editor:not([hidden]) { display: grid; gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+.patchhead { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.patchno { font: 700 28px/1 var(--mono); color: var(--accent-deep); min-width: 54px; }
+#patchName { font: 700 22px var(--mono); letter-spacing: .06em; width: 14ch; padding: 6px 10px; text-transform: none; }
+.sub { color: var(--muted); font-size: 12px; }
+.chain { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--chip); border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 700; cursor: pointer; letter-spacing: .03em; }
+.chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--off); display: inline-block; }
+.chip.on i { background: var(--on); box-shadow: 0 0 6px var(--on); }
+.chip.sel { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: -1px; }
+.chip.split { cursor: default; background: transparent; border-style: dashed; color: var(--muted); }
+.arrow { color: var(--muted); font-size: 12px; }
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.tabs .grp { font-size: 11px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; align-self: center; margin: 0 4px 0 8px; }
+.tabs .grp:first-child { margin-left: 0; }
+.tab { border: 1px solid transparent; background: transparent; padding: 5px 10px; border-radius: 7px; font-size: 13px; display: inline-flex; gap: 6px; align-items: center; }
+.tab.sel { background: var(--accent); color: var(--accent-ink); }
+.tab i { width: 7px; height: 7px; border-radius: 50%; background: var(--off); }
+.tab.on i { background: var(--on); }
+.tab.nosw i { display: none; }
+.blockhead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.blockhead h2 { margin: 0; font-size: 18px; }
+.blockhead .addr { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.switch { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px 4px 6px; cursor: pointer; font-weight: 700; font-size: 12px; background: var(--chip); }
+.switch i { width: 30px; height: 16px; border-radius: 8px; background: var(--track); position: relative; transition: background .15s; }
+.switch i::after { content: ''; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--panel); transition: left .15s; }
+.switch.on i { background: var(--on); }
+.switch.on i::after { left: 16px; }
+.params { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px 16px; }
+.param { display: grid; gap: 4px; padding: 8px 10px; border-radius: 8px; background: var(--panel2); border: 1px solid transparent; min-width: 0; }
+.param.dirty { border-color: var(--accent); }
+.param .top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.param .nm { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.param .val { font: 600 13px var(--mono); white-space: nowrap; }
+.param select { width: 100%; }
+input[type=range] { width: 100%; accent-color: var(--fill); margin: 2px 0; }
+.subhead { grid-column: 1 / -1; font-size: 12px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; margin-top: 6px; border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+.toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.note { font-size: 12px; color: var(--muted); margin: 0; }
+.notice { font-size: 13px; padding: 10px 12px; border-radius: 8px; background: var(--panel2); border: 1px solid var(--line); }
+.notice.err { color: var(--err); }
+#log { font: 11px/1.5 var(--mono); color: var(--muted); max-height: 140px; overflow: auto; white-space: pre-wrap; word-break: break-all; }
+.emptystate { text-align: center; padding: 40px 16px; color: var(--muted); }
+.emptystate h2 { color: var(--ink); margin: 0 0 6px; font-size: 18px; }
+@media (max-width: 820px) {
+  .main { grid-template-columns: 1fr; }
+  aside { border-right: 0; border-bottom: 1px solid var(--line); max-height: 220px; }
+  .portbox { right: auto; left: 0; width: min(320px, calc(100vw - 32px)); }
+}
+@media (max-width: 480px) {
+  header, .wrap { padding-left: 16px; padding-right: 16px; }
+  .params { grid-template-columns: 1fr; }
+  #patchName { width: 100%; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand"><b>GP-10</b> Web Editor</div>
+    <span id="status" class="pill">未接続</span>
+    <span class="spacer"></span>
+    <label class="check" title="本体側でつまみを回した変更も、定期的に読み直して画面に反映します"><input type="checkbox" id="chkSync"> 本体の変更を反映</label>
+    <button id="btnReload" disabled>読み直す</button>
+    <details class="ports" id="ports">
+      <summary>MIDI設定 ▾</summary>
+      <div class="portbox">
+        <label>入力（GP-10 → PC）<select id="selIn"></select></label>
+        <label>出力（PC → GP-10）<select id="selOut"></select></label>
+        <label>Device ID<input type="text" id="inDev" value="10" style="font-family:var(--mono);width:70px"></label>
+        <label>パッチ切り替えのMIDIチャンネル（PC送信時）<select id="selCh"></select></label>
+        <p class="note">「GP-10 DAW CTRL」ではなく「GP-10」を選びます。</p>
+      </div>
+    </details>
+    <button id="btnConnect" class="primary">接続</button>
+  </header>
+
+  <div class="main">
+    <aside>
+      <div class="aside-head"><h2>パッチ</h2><button id="btnNames" disabled>一覧を読む</button></div>
+      <ul id="patchList"><li class="empty">接続後に「一覧を読む」を押すと、99パッチの名前を表示します。クリックで本体のパッチを切り替えます。</li></ul>
+    </aside>
+
+    <div class="content">
+      <div class="wrap">
+        <div id="empty" class="card emptystate">
+          <h2>GP-10を接続してください</h2>
+          <p>ChromeかEdgeで開き、右上の「接続」を押してMIDIのSysExを許可します。GP-10のドライバが必要です。</p>
+          <div id="envNotice"></div>
+        </div>
+
+        <div id="editor" hidden>
+          <div class="card">
+            <div class="patchhead">
+              <span class="patchno" id="patchNo">--</span>
+              <input type="text" id="patchName" maxlength="12" spellcheck="false" autocomplete="off" aria-label="パッチ名">
+              <span class="sub" id="patchInfo">現在のパッチ（テンポラリ）を編集しています。保存は本体のWRITEで行ってください。</span>
+              <span class="spacer"></span>
+              <div class="toolbar">
+                <button id="btnExport">.syxで保存</button>
+                <button id="btnImport">.syxを読み込む</button>
+                <input type="file" id="fileSyx" accept=".syx,application/octet-stream" hidden>
+              </div>
+            </div>
+            <div class="chain" id="chain"></div>
+          </div>
+
+          <div class="card">
+            <div class="tabs" id="tabs"></div>
+          </div>
+
+          <div class="card">
+            <div class="blockhead">
+              <h2 id="blockTitle"></h2>
+              <span class="addr" id="blockAddr"></span>
+              <span id="blockSwitch"></span>
+            </div>
+            <div class="params" id="params"></div>
+          </div>
+
+          <div class="card">
+            <div class="toolbar"><strong style="font-size:13px">通信ログ</strong><span class="sub" id="logInfo"></span><span class="spacer"></span><button id="btnLogClear">クリア</button></div>
+            <div id="log"></div>
+          </div>
+          <p class="note" id="srcNote"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const DATA = /*__GP10_DATA__*/null;
+  const $ = (id) => document.getElementById(id);
+
+  // ---------- constants & helpers ----------
+  const MODEL = [0x00, 0x00, 0x00, 0x05];
+  const TEMP = [0x20, 0x00, 0x00, 0x00];
+  const h2 = (b) => b.toString(16).toUpperCase().padStart(2, '0');
+  const hex = (a) => Array.from(a, h2).join(' ');
+  const a2i = (a) => a.reduce((v, b) => (v << 7) | b, 0) >>> 0;
+  const i2a = (n, len = 4) => { const out = []; for (let i = 0; i < len; i++) { out.unshift(n & 0x7F); n >>>= 7; } return out; };
+  const checksum = (b) => (128 - (b.reduce((s, x) => s + x, 0) % 128)) % 128;
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('gp10ed.' + k); return v === null ? d : v; } catch { return d; } },
+    set(k, v) { try { localStorage.setItem('gp10ed.' + k, v); } catch { /* ignore */ } },
+  };
+  const devId = () => { const v = parseInt($('inDev').value, 16); return Number.isFinite(v) && v >= 0 && v <= 0x7F ? v : 0x10; };
+  const rq1 = (addr, size) => { const body = [...addr, ...i2a(size)]; return [0xF0, 0x41, devId(), ...MODEL, 0x11, ...body, checksum(body), 0xF7]; };
+  const dt1 = (addr, data) => { const body = [...addr, ...data]; return [0xF0, 0x41, devId(), ...MODEL, 0x12, ...body, checksum(body), 0xF7]; };
+  function parseDT1(b) {
+    if (b.length < 14 || b[0] !== 0xF0 || b[1] !== 0x41 || b[b.length - 1] !== 0xF7) return null;
+    for (let i = 0; i < 4; i++) if (b[3 + i] !== MODEL[i]) return null;
+    if (b[7] !== 0x12) return null;
+    const body = b.slice(8, b.length - 2);
+    if (checksum(body) !== b[b.length - 2]) return { bad: true };
+    return { addr: body.slice(0, 4), data: body.slice(4) };
+  }
+
+  // ---------- model ----------
+  const OPTS = DATA.opts;
+  const BLOCKS = DATA.blocks.map((b, bi) => {
+    const base = a2i(b.a);
+    const params = b.p.map(([off, name, min, max, size, view]) => ({ off, name, min, max, size, view, abs: base + off, block: bi }))
+      .filter((p) => !/^\(reserved\)$/i.test(p.name));
+    return { name: b.n, short: b.n.replace(/^Patch /, ''), base, len: b.len, params, idx: bi };
+  });
+  const byName = Object.fromEntries(BLOCKS.map((b) => [b.short, b]));
+  const findParam = (blockShort, name) => (byName[blockShort] ? byName[blockShort].params.find((p) => p.name === name) : null);
+  const TEMP_BASE = a2i(TEMP);
+  const PATCH_SPAN = a2i([0x00, 0x04, 0x00, 0x00]);
+  const userPatchBase = (p) => TEMP_BASE + PATCH_SPAN * p;
+
+  const S = {
+    access: null, input: null, output: null, mem: new Map(), loaded: false,
+    sel: store.get('block', 'Amp'), names: new Array(100).fill(null), cur: null,
+    collector: null, waiters: [], queue: Promise.resolve(), pending: new Map(), flushTimer: null,
+    touched: new Map(), controls: new Map(), syncTimer: null, lastRx: 0,
+  };
+
+  function getVal(p) {
+    const bytes = [];
+    for (let i = 0; i < p.size; i++) { const v = S.mem.get(p.abs + i); if (v === undefined) return undefined; bytes.push(v); }
+    return p.size === 1 ? bytes[0] : bytes.reduce((v, x) => (v << 4) | (x & 0x0F), 0);
+  }
+  function encode(p, v) {
+    if (p.size === 1) return [v & 0x7F];
+    const out = [];
+    for (let i = p.size - 1; i >= 0; i--) out.push((v >> (4 * i)) & 0x0F);
+    return out;
+  }
+  function display(p, v) {
+    if (v === undefined) return '—';
+    const [k, a, b, unit] = p.view;
+    if (k === 'l') { const o = OPTS[a]; return o && o[v - p.min] !== undefined ? o[v - p.min] : String(v); }
+    if (k === 'r') {
+      const x = a + (v - p.min) * b;
+      const dec = Number.isInteger(b) ? 0 : (String(b).split('.')[1] || '').length;
+      const s = (a < 0 && x > 0 ? '+' : '') + x.toFixed(dec);
+      return unit && unit !== 'ASCII' ? `${s} ${unit}` : s;
+    }
+    if (k === 'pan') { const d = (v - 50) * 2; return d === 0 ? 'CENTER' : d < 0 ? `L${-d}` : `R${d}`; }
+    if (k === 'bal') { return v <= 50 ? `M${v * 2}:100N` : `M100:${(100 - v) * 2}N`; }
+    return String(v);
+  }
+
+  // ---------- visibility rules ----------
+  const norm = (s) => s.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const ALIAS = { DISTORTION: ['DIST'] };
+  const TYPE_SELECTOR = { 'SYNTH': 'SYNTH Type', 'Poly Fx': 'Poly Fx Type', 'E.GTR': 'Type', 'AC': 'Type', 'E.BASS': 'Type' };
+  function visibleParams(block) {
+    const selName = TYPE_SELECTOR[block.short];
+    if (!selName) return block.params;
+    const sel = block.params.find((p) => p.name === selName);
+    if (!sel || sel.view[0] !== 'l') return block.params;
+    const options = OPTS[sel.view[1]];
+    const cur = options[(getVal(sel) ?? sel.min) - sel.min];
+    const keys = options.map((o) => ({ o, keys: [norm(o), ...(ALIAS[o] || [])].filter((k) => k.length >= 2) }));
+    return block.params.filter((p) => {
+      if (p === sel) return true;
+      const n = norm(p.name);
+      const owner = keys.find((k) => k.keys.some((key) => n.startsWith(key) && key.length >= 2 && n.length > key.length));
+      return !owner || owner.o === cur;
+    });
+  }
+  const MODELING_BLOCK = { 'E.GTR': 'E.GTR', 'ACOUSTIC': 'AC', 'E.BASS': 'E.BASS', 'SYNTH': 'SYNTH', 'POLY FX': 'Poly Fx' };
+  const FX_BLOCK = {
+    'OD/DS': 'FX/Overdrive, Distortion', 'COMPRESSOR': 'FX/Compressor', 'LIMITER': 'FX/Limiter', 'EQ': 'FX/Equalize', 'T.WAH': 'FX/T.Wah',
+    'PITCH SHIFTER': 'FX/Pitch Shifter', 'HARMONIST': 'FX/Harmonist', 'PEDAL BEND': 'FX/Pedal Bend', 'PHASER': 'FX/Phaser', 'FLANGER': 'FX/Flanger',
+    'TREMOLO': 'FX/Tremolo', 'PAN': 'FX/Auto Pan', 'ROTARY': 'FX/Rotary', 'UNI-V': 'FX/Uni-V', 'CHORUS': 'FX/Chorus', 'DELAY': 'FX/Delay',
+  };
+  const listValue = (p) => { const v = getVal(p); return v === undefined ? null : OPTS[p.view[1]][v - p.min]; };
+
+  // tabs: [label, blockShort, switchParamName]
+  const TAB_GROUPS = [
+    ['パッチ', [['COMMON', 'Common'], ['CHAIN', 'Effects Chain']]],
+    ['入力', [['MODELING', 'Modeling', 'Modeling Tone Switch'], ['MODEL詳細', '@model'], ['TUNE', 'TUNE', 'Alternate Tuning Switch']]],
+    ['エフェクト', [['AMP', 'Amp', 'Amp Switch'], ['FX', 'FX', 'Fx Switch'], ['WAH', 'Wah', 'Wah Switch'], ['CHORUS', 'Chorus', 'Chorus Switch'],
+      ['DELAY', 'Delay', 'Delay Switch'], ['REVERB', 'Reverb', 'Reverb Switch'], ['EQ', 'Equalizer', 'EQ Switch'], ['FV', 'Foot Volume'], ['NS', 'NS', 'NS Switch']]],
+    ['コントロール', [['CTL/EXP', 'Controller Function'], ['ASSIGN', 'Controller Assign']]],
+  ];
+  const CHAIN_BLOCK = { AMP: ['Amp', 'Amp Switch'], FX: ['FX', 'Fx Switch'], WAH: ['Wah', 'Wah Switch'], CHORUS: ['Chorus', 'Chorus Switch'], DELAY: ['Delay', 'Delay Switch'],
+    REVERB: ['Reverb', 'Reverb Switch'], EQ: ['Equalizer', 'EQ Switch'], NS: ['NS', 'NS Switch'], FV: ['Foot Volume', null] };
+  const modelBlockShort = () => MODELING_BLOCK[listValue(findParam('Modeling', 'Modeling Type'))] || 'E.GTR';
+  const resolveSel = (s) => (s === '@model' ? modelBlockShort() : s);
+
+  // ---------- log ----------
+  const logLines = [];
+  function log(msg) {
+    const d = new Date();
+    logLines.push(`${d.toTimeString().slice(0, 8)} ${msg}`);
+    if (logLines.length > 300) logLines.shift();
+    const el = $('log'); el.textContent = logLines.join('\n'); el.scrollTop = el.scrollHeight;
+  }
+  $('btnLogClear').onclick = () => { logLines.length = 0; $('log').textContent = ''; };
+
+  // ---------- MIDI ----------
+  function setStatus(t, cls) { const s = $('status'); s.textContent = t; s.className = 'pill ' + (cls || ''); }
+  function send(bytes, note) {
+    if (!S.output) throw new Error('出力ポートがありません');
+    S.output.send(bytes);
+    if (note) log(`→ ${note}`);
+  }
+  function onMessage(e) {
+    const b = Array.from(e.data);
+    if (b[0] === 0xF8 || b[0] === 0xFE) return;
+    S.lastRx = performance.now();
+    if (b[0] === 0xF0) {
+      const r = parseDT1(b);
+      if (r && !r.bad) {
+        if (S.collector) S.collector.push(r);
+        for (const w of S.waiters.slice()) if (w.match(r)) { S.waiters.splice(S.waiters.indexOf(w), 1); w.resolve(r); }
+        if (!S.collector) applyPacket(r, true);
+      } else if (r && r.bad) log('← チェックサムNGのDT1を受信');
+      return;
+    }
+    if ((b[0] & 0xF0) === 0xC0) {
+      log(`← 本体でパッチ切り替え（PC ${b[1] + 1}）`);
+      clearTimeout(S.pcTimer);
+      S.pcTimer = setTimeout(() => enqueue(async () => { await readCurrentNo(); await readTemp(); }), 120);
+    }
+  }
+  function enqueue(fn) {
+    const run = S.queue.then(fn, fn);
+    S.queue = run.catch((e) => log('エラー: ' + e.message));
+    return run;
+  }
+  function waitDT1(match, ms) {
+    return new Promise((resolve) => {
+      const w = { match, resolve }; S.waiters.push(w);
+      setTimeout(() => { const i = S.waiters.indexOf(w); if (i >= 0) { S.waiters.splice(i, 1); resolve(null); } }, ms);
+    });
+  }
+  function collect(addr, size, quietMs = 160, firstMs = 600) {
+    return new Promise((resolve) => {
+      const packets = []; let t1 = null; let t2 = null;
+      const done = () => { clearTimeout(t1); clearTimeout(t2); S.collector = null; resolve(packets); };
+      S.collector = { push(r) { packets.push(r); clearTimeout(t1); t1 = setTimeout(done, quietMs); } };
+      t1 = setTimeout(done, firstMs); t2 = setTimeout(done, 6000);
+      send(rq1(addr, size));
+    });
+  }
+  function applyPacket(r, external) {
+    const base = a2i(r.addr);
+    if (base < TEMP_BASE || base >= TEMP_BASE + PATCH_SPAN) return;
+    r.data.forEach((v, i) => S.mem.set(base + i, v));
+    if (external) { refreshControls(); }
+  }
+
+  async function readTemp() {
+    setStatus('読み込み中…', 'busy');
+    const packets = await collect(TEMP, PATCH_SPAN);
+    const before = S.loaded ? new Map(S.mem) : null;
+    for (const r of packets) applyPacket(r, false);
+    const total = packets.reduce((a, r) => a + r.data.length, 0);
+    if (!packets.length) { setStatus('応答なし', 'err'); log('← パッチの読み出しに応答がありません'); return false; }
+    S.loaded = true;
+    if (!before) log(`← パッチを読み込みました（${packets.length}ブロック ${total}バイト）`);
+    showEditor();
+    const structural = !before || ['Modeling Type', 'Fx Select', 'SYNTH Type', 'Poly Fx Type', 'Type'].some((n) => BLOCKS.some((b) => b.params.some((p) => p.name === n && getValFrom(before, p) !== getVal(p))));
+    if (structural) renderAll(); else refreshControls();
+    setStatus(`接続: ${S.output.name}`, 'ok');
+    return true;
+  }
+  const getValFrom = (mem, p) => { if (!mem) return undefined; const save = S.mem; S.mem = mem; const v = getVal(p); S.mem = save; return v; };
+
+  async function readCurrentNo() {
+    const p = waitDT1((r) => a2i(r.addr) === 0, 500);
+    send(rq1([0, 0, 0, 0], 1));
+    const r = await p;
+    if (r && r.data.length) { S.cur = r.data[0] + 1; renderPatchHead(); renderPatchList(); }
+  }
+
+  async function readNames() {
+    $('btnNames').disabled = true;
+    for (let p = 1; p <= 99; p++) {
+      const addr = i2a(userPatchBase(p));
+      const w = waitDT1((r) => a2i(r.addr) === userPatchBase(p), 400);
+      send(rq1(addr, 12));
+      const r = await w;
+      S.names[p] = r ? String.fromCharCode(...r.data.slice(0, 12)).replace(/\s+$/, '') : '（応答なし）';
+      if (p % 9 === 0 || p === 99) renderPatchList();
+      await sleep(8);
+    }
+    log('← 99パッチの名前を読み込みました');
+    $('btnNames').disabled = false;
+  }
+
+  async function selectPatch(p) {
+    log(`→ パッチ${String(p).padStart(2, '0')}に切り替え`);
+    send(dt1([0, 0, 0, 0], [p - 1]));
+    await sleep(150);
+    await readCurrentNo();
+    if (S.cur !== p) {
+      const ch = parseInt($('selCh').value, 10) || 0;
+      send([0xB0 | ch, 0x00, 0x00]); send([0xB0 | ch, 0x20, 0x00]); send([0xC0 | ch, p - 1]);
+      log('→ プログラムチェンジで再試行');
+      await sleep(200);
+      await readCurrentNo();
+    }
+    await readTemp();
+  }
+
+  // ---------- parameter edits ----------
+  function setParam(p, v) {
+    v = Math.max(p.min, Math.min(p.max, v | 0));
+    const bytes = encode(p, v);
+    bytes.forEach((x, i) => S.mem.set(p.abs + i, x));
+    S.touched.set(p.abs, performance.now());
+    S.pending.set(p.abs, p);
+    if (!S.flushTimer) S.flushTimer = setTimeout(flush, 25);
+  }
+  function flush() {
+    S.flushTimer = null;
+    for (const p of S.pending.values()) {
+      const data = []; for (let i = 0; i < p.size; i++) data.push(S.mem.get(p.abs + i));
+      try { send(dt1(i2a(p.abs), data)); } catch (e) { log('送信失敗: ' + e.message); }
+    }
+    if (S.pending.size === 1) { const p = S.pending.values().next().value; log(`→ ${p.name} = ${display(p, getVal(p))}`); }
+    else if (S.pending.size > 1) log(`→ ${S.pending.size}項目を送信`);
+    S.pending.clear();
+  }
+
+  // ---------- rendering ----------
+  function showEditor() { $('empty').hidden = true; $('editor').hidden = false; }
+  function renderAll() { renderPatchHead(); renderChain(); renderTabs(); renderBlock(); }
+  function renderPatchHead() {
+    $('patchNo').textContent = S.cur ? String(S.cur).padStart(2, '0') : '--';
+    const name = []; for (let i = 0; i < 12; i++) name.push(S.mem.get(TEMP_BASE + i) ?? 0x20);
+    if (document.activeElement !== $('patchName')) $('patchName').value = String.fromCharCode(...name).replace(/\s+$/, '');
+  }
+  function swState(short, swName) {
+    if (!swName) return null;
+    const p = findParam(short, swName); if (!p) return null;
+    return getVal(p) === 1;
+  }
+  function renderChain() {
+    const el = $('chain'); el.innerHTML = '';
+    const chainBlock = byName['Effects Chain'];
+    const seq = chainBlock.params.map((p) => listValue(p)).filter(Boolean);
+    const startChip = document.createElement('span'); startChip.className = 'chip split'; startChip.textContent = 'INPUT'; el.appendChild(startChip);
+    let splits = 0;
+    for (const item of seq) {
+      const ar = document.createElement('span'); ar.className = 'arrow'; ar.textContent = '›'; el.appendChild(ar);
+      const chip = document.createElement('span');
+      if (item === 'SPLIT_TO_MIXER') {
+        splits++;
+        chip.className = 'chip split';
+        chip.textContent = splits === 1 ? 'SPLIT' : 'MIXER';
+        chip.title = splits === 1 ? 'ここでモデリング音とノーマルPUの経路に分岐' : 'ここで2つの経路を合流（MIXER）';
+        el.appendChild(chip); continue;
+      }
+      const [short, sw] = CHAIN_BLOCK[item] || [];
+      const on = swState(short, sw);
+      chip.className = 'chip' + (on ? ' on' : '') + (resolveSel(S.sel) === short ? ' sel' : '');
+      chip.innerHTML = (sw ? '<i></i>' : '') + '<span></span>';
+      chip.querySelector('span').textContent = item;
+      chip.title = sw ? 'クリックで表示、ダブルクリックでON/OFF' : 'クリックで表示';
+      chip.onclick = () => { S.sel = short; store.set('block', short); renderTabs(); renderBlock(); renderChain(); };
+      if (sw) chip.ondblclick = () => toggleSwitch(short, sw);
+      el.appendChild(chip);
+    }
+    const end = document.createElement('span'); end.className = 'arrow'; end.textContent = '› OUTPUT'; el.appendChild(end);
+  }
+  function toggleSwitch(short, sw) {
+    const p = findParam(short, sw); if (!p) return;
+    setParam(p, getVal(p) === 1 ? 0 : 1);
+    renderChain(); renderTabs(); if (resolveSel(S.sel) === short) renderBlockSwitch();
+  }
+  function renderTabs() {
+    const el = $('tabs'); el.innerHTML = '';
+    for (const [g, tabs] of TAB_GROUPS) {
+      const gl = document.createElement('span'); gl.className = 'grp'; gl.textContent = g; el.appendChild(gl);
+      for (const [label, target, sw] of tabs) {
+        const short = resolveSel(target);
+        const b = document.createElement('button');
+        const on = swState(target === '@model' ? 'Modeling' : short, sw);
+        b.className = 'tab' + (sw ? (on ? ' on' : '') : ' nosw') + (resolveSel(S.sel) === short ? ' sel' : '');
+        b.innerHTML = '<i></i><span></span>';
+        b.querySelector('span').textContent = target === '@model' ? short : label;
+        b.onclick = () => { S.sel = short; store.set('block', short); renderTabs(); renderChain(); renderBlock(); };
+        el.appendChild(b);
+      }
+    }
+  }
+  const SWITCH_OF = Object.fromEntries(TAB_GROUPS.flatMap(([, t]) => t).filter((t) => t[2]).map((t) => [t[1], t[2]]));
+  function renderBlockSwitch() {
+    const short = resolveSel(S.sel); const sw = SWITCH_OF[short];
+    const el = $('blockSwitch'); el.innerHTML = '';
+    if (!sw) return;
+    const on = swState(short, sw);
+    const b = document.createElement('span'); b.className = 'switch' + (on ? ' on' : ''); b.innerHTML = '<i></i>' + (on ? 'ON' : 'OFF');
+    b.setAttribute('role', 'switch'); b.setAttribute('aria-checked', String(!!on)); b.tabIndex = 0;
+    b.onclick = () => toggleSwitch(short, sw);
+    b.onkeydown = (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleSwitch(short, sw); } };
+    el.appendChild(b);
+  }
+  // most common leading words shared by most of the block's parameters (e.g. "Amp ", "OSC Synth ")
+  function commonPrefix(names) {
+    if (names.length < 2) return '';
+    const need = Math.max(2, Math.ceil(names.length * 0.5));
+    let best = '';
+    for (let k = 1; k <= 3; k++) {
+      const count = new Map();
+      for (const n of names) { const w = n.split(' '); if (w.length > k) { const pre = w.slice(0, k).join(' ') + ' '; count.set(pre, (count.get(pre) || 0) + 1); } }
+      let top = null; for (const [pre, c] of count) if (c >= need && (!top || c > top[1])) top = [pre, c];
+      if (top && top[0].startsWith(best)) best = top[0]; else break;
+    }
+    return best;
+  }
+  function renderBlock() {
+    const short = resolveSel(S.sel);
+    const block = byName[short] || byName['Amp'];
+    S.controls.clear();
+    $('blockTitle').textContent = block.short;
+    $('blockAddr').textContent = hex(i2a(block.base));
+    renderBlockSwitch();
+    const box = $('params'); box.innerHTML = '';
+    const sw = SWITCH_OF[short];
+    let params = visibleParams(block).filter((p) => p.name !== sw);
+    const pre = commonPrefix(params.map((p) => p.name));
+    const addSection = (title) => { const h = document.createElement('div'); h.className = 'subhead'; h.textContent = title; box.appendChild(h); };
+    const renderList = (list) => { for (const p of list) box.appendChild(makeControl(p, pre)); };
+    if (short === 'FX') {
+      renderList(params);
+      const sub = FX_BLOCK[listValue(findParam('FX', 'Fx Select'))];
+      if (sub && byName[sub]) {
+        addSection(byName[sub].short.replace('FX/', '') + '（' + hex(i2a(byName[sub].base)) + '）');
+        const sp = byName[sub].params; const pre2 = commonPrefix(sp.map((p) => p.name));
+        for (const p of sp) box.appendChild(makeControl(p, pre2));
+      }
+    } else if (short === 'Patch Name') {
+      renderList(params);
+    } else {
+      renderList(params);
+    }
+  }
+  function makeControl(p, pre) {
+    const wrap = document.createElement('div'); wrap.className = 'param';
+    const top = document.createElement('div'); top.className = 'top';
+    const nm = document.createElement('span'); nm.className = 'nm';
+    const label = pre && p.name.startsWith(pre) && p.name.length > pre.length ? p.name.slice(pre.length) : p.name;
+    nm.textContent = label; nm.title = `${p.name}  [${hex(i2a(p.abs))}]  (${p.min}–${p.max})`;
+    const val = document.createElement('span'); val.className = 'val';
+    top.append(nm, val); wrap.appendChild(top);
+    const isList = p.view[0] === 'l';
+    const opts = isList ? OPTS[p.view[1]] : null;
+    let ctl;
+    if (isList && opts.length <= 64) {
+      ctl = document.createElement('select');
+      opts.forEach((o, i) => ctl.add(new Option(o, String(p.min + i))));
+      ctl.onchange = () => { setParam(p, parseInt(ctl.value, 10)); update(); afterChange(p); };
+    } else {
+      ctl = document.createElement('input'); ctl.type = 'range'; ctl.min = String(p.min); ctl.max = String(p.max); ctl.step = '1';
+      ctl.oninput = () => { setParam(p, parseInt(ctl.value, 10)); update(); };
+      ctl.onchange = () => afterChange(p);
+    }
+    ctl.setAttribute('aria-label', p.name);
+    wrap.appendChild(ctl);
+    if (isList && opts.length <= 64) wrap.insertBefore(top, ctl);
+    function update(force) {
+      const v = getVal(p);
+      val.textContent = display(p, v);
+      if (v === undefined) return;
+      const t = S.touched.get(p.abs) || 0;
+      if (!force && performance.now() - t < 900 && document.activeElement === ctl) return;
+      if (String(ctl.value) !== String(v)) ctl.value = String(v);
+    }
+    update(true);
+    S.controls.set(p.abs, update);
+    return wrap;
+  }
+  function afterChange(p) {
+    if (['Modeling Type', 'Fx Select', 'SYNTH Type', 'Poly Fx Type', 'Type'].includes(p.name)) { renderTabs(); renderBlock(); }
+    if (p.name.startsWith('Effect Chain')) renderChain();
+  }
+  function refreshControls() {
+    for (const u of S.controls.values()) u();
+    renderPatchHead(); renderChain(); renderTabs(); renderBlockSwitch();
+  }
+  function renderPatchList() {
+    const ul = $('patchList'); ul.innerHTML = '';
+    if (!S.names.some(Boolean)) {
+      const li = document.createElement('li'); li.className = 'empty';
+      li.textContent = S.access ? '「一覧を読む」で99パッチの名前を読み込みます（数秒かかります）。' : '接続後に「一覧を読む」を押すと、99パッチの名前を表示します。';
+      ul.appendChild(li); return;
+    }
+    for (let p = 1; p <= 99; p++) {
+      const li = document.createElement('li');
+      if (p === S.cur) li.className = 'cur';
+      li.innerHTML = '<span class="no"></span><span class="nm"></span>';
+      li.children[0].textContent = String(p).padStart(2, '0');
+      li.children[1].textContent = S.names[p] ?? '…';
+      li.onclick = () => enqueue(() => selectPatch(p));
+      ul.appendChild(li);
+    }
+  }
+
+  // ---------- patch name ----------
+  $('patchName').addEventListener('change', () => {
+    const s = $('patchName').value.slice(0, 12);
+    const bytes = Array.from(s.padEnd(12, ' '), (c) => { const x = c.charCodeAt(0); return x >= 0x20 && x <= 0x7D ? x : 0x20; });
+    bytes.forEach((x, i) => S.mem.set(TEMP_BASE + i, x));
+    try { send(dt1(TEMP, bytes), `パッチ名 = 「${s}」`); } catch (e) { log(e.message); }
+    if (S.cur) { S.names[S.cur] = S.names[S.cur] !== null ? S.names[S.cur] : null; }
+  });
+  $('patchName').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('patchName').blur(); });
+
+  // ---------- .syx export / import ----------
+  function currentPatchMessages() {
+    const msgs = [];
+    for (const b of BLOCKS) {
+      if (!b.len) continue;
+      const data = []; for (let i = 0; i < b.len; i++) data.push(S.mem.get(b.base + i) ?? 0);
+      msgs.push(dt1(i2a(b.base), data));
+    }
+    return msgs;
+  }
+  $('btnExport').onclick = () => {
+    const bytes = new Uint8Array(currentPatchMessages().flat());
+    const name = ($('patchName').value || 'patch').replace(/[^\w.-]+/g, '_');
+    const url = URL.createObjectURL(new Blob([bytes], { type: 'application/octet-stream' }));
+    const a = Object.assign(document.createElement('a'), { href: url, download: `GP-10_${name}.syx` });
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    log(`.syxで保存しました（${bytes.length}バイト）`);
+  };
+  $('btnImport').onclick = () => $('fileSyx').click();
+  $('fileSyx').onchange = async () => {
+    const file = $('fileSyx').files[0]; $('fileSyx').value = '';
+    if (!file) return;
+    const buf = Array.from(new Uint8Array(await file.arrayBuffer()));
+    const msgs = []; let cur = null;
+    for (const x of buf) { if (x === 0xF0) cur = [x]; else if (cur) { cur.push(x); if (x === 0xF7) { msgs.push(cur); cur = null; } } }
+    const packets = msgs.map(parseDT1).filter((r) => r && !r.bad);
+    // map user-patch addresses onto the temporary patch
+    const mapped = [];
+    for (const r of packets) {
+      let base = a2i(r.addr);
+      if (base >= TEMP_BASE + PATCH_SPAN && base < TEMP_BASE + PATCH_SPAN * 100) base = TEMP_BASE + ((base - TEMP_BASE) % PATCH_SPAN);
+      if (base >= TEMP_BASE && base < TEMP_BASE + PATCH_SPAN) mapped.push({ addr: i2a(base), data: r.data });
+    }
+    if (!mapped.length) { log('.syxにGP-10のパッチデータが見つかりませんでした'); return; }
+    enqueue(async () => {
+      log(`.syxを本体の現在のパッチに送信します（${mapped.length}メッセージ）`);
+      for (const r of mapped) { send(dt1(r.addr, r.data)); applyPacket(r, false); await sleep(25); }
+      await readTemp(); renderAll();
+    });
+  };
+
+  // ---------- connection ----------
+  function fillPorts() {
+    const fill = (sel, map, key) => {
+      const ports = Array.from(map.values()); const prev = store.get(key, '');
+      sel.innerHTML = '';
+      for (const p of ports) sel.add(new Option(p.name + (p.state === 'disconnected' ? '（切断）' : ''), p.id));
+      const pick = ports.find((p) => p.id === prev) || ports.find((p) => /GP-?10/i.test(p.name) && !/DAW/i.test(p.name)) || ports.find((p) => /GP-?10/i.test(p.name)) || ports[0];
+      if (pick) sel.value = pick.id;
+    };
+    fill($('selIn'), S.access.inputs, 'in'); fill($('selOut'), S.access.outputs, 'out');
+    bind();
+  }
+  function bind() {
+    if (S.input) S.input.onmidimessage = null;
+    S.input = S.access.inputs.get($('selIn').value) || null;
+    S.output = S.access.outputs.get($('selOut').value) || null;
+    if (S.input) S.input.onmidimessage = onMessage;
+    store.set('in', $('selIn').value); store.set('out', $('selOut').value);
+    const ok = !!(S.input && S.output);
+    $('btnReload').disabled = !ok; $('btnNames').disabled = !ok;
+    if (!ok) setStatus('GP-10のポートが見つかりません', 'err');
+    return ok;
+  }
+  async function connect() {
+    if (!('requestMIDIAccess' in navigator)) { $('envNotice').innerHTML = '<p class="notice err">このブラウザはWeb MIDIに対応していません。ChromeかEdgeで開いてください。</p>'; return; }
+    try {
+      S.access = await navigator.requestMIDIAccess({ sysex: true });
+    } catch (e) {
+      $('envNotice').innerHTML = '<p class="notice err"></p>';
+      $('envNotice').firstChild.textContent = `MIDIの利用が許可されませんでした（${e.name}）。アドレスバーのサイト設定でMIDIを許可してください。`;
+      setStatus('許可されていません', 'err'); return;
+    }
+    S.access.onstatechange = (e) => { if (e.port.state === 'connected' && !S.output) fillPorts(); else if (e.port.state === 'disconnected' && (e.port === S.input || e.port === S.output)) setStatus('GP-10が切断されました', 'err'); };
+    fillPorts();
+    if (!bind()) return;
+    $('btnConnect').textContent = '再接続';
+    renderPatchList();
+    await enqueue(async () => {
+      const id = waitIdentity(800);
+      send([0xF0, 0x7E, 0x7F, 0x06, 0x01, 0xF7]);
+      const r = await id;
+      if (!r) { setStatus('GP-10の応答なし', 'err'); log('← Identity Requestに応答がありません'); return; }
+      log(`← Identity: Roland family ${hex(r.slice(6, 8))}${r[6] === 0x05 && r[7] === 0x03 ? '（GP-10）' : '（GP-10ではない可能性）'}`);
+      if (r[2] !== 0x7F) $('inDev').value = h2(r[2]);
+      await readCurrentNo();
+      await readTemp();
+    });
+  }
+  function waitIdentity(ms) {
+    return new Promise((resolve) => {
+      const prev = S.input.onmidimessage; let done = false;
+      S.input.onmidimessage = (e) => {
+        const b = Array.from(e.data);
+        if (!done && b[0] === 0xF0 && b[1] === 0x7E && b[3] === 0x06 && b[4] === 0x02) { done = true; S.input.onmidimessage = prev; resolve(b); return; }
+        prev && prev(e);
+      };
+      setTimeout(() => { if (!done) { done = true; S.input.onmidimessage = prev; resolve(null); } }, ms);
+    });
+  }
+  $('btnConnect').onclick = () => connect();
+  $('selIn').onchange = () => bind(); $('selOut').onchange = () => bind();
+  $('btnReload').onclick = () => enqueue(async () => { await readCurrentNo(); await readTemp(); });
+  $('btnNames').onclick = () => enqueue(readNames);
+  $('chkSync').onchange = () => {
+    store.set('sync', $('chkSync').checked ? '1' : '0');
+    clearInterval(S.syncTimer);
+    if ($('chkSync').checked) S.syncTimer = setInterval(() => { if (S.output && S.loaded && !S.collector && !S.pending.size) enqueue(readTemp); }, 1500);
+  };
+  $('chkSync').checked = store.get('sync', '0') === '1';
+  $('chkSync').onchange();
+  $('inDev').value = store.get('dev', '10');
+  $('inDev').onchange = () => store.set('dev', $('inDev').value);
+  for (let c = 0; c < 16; c++) $('selCh').add(new Option(`ch ${c + 1}`, String(c)));
+  $('selCh').value = store.get('ch', '0'); $('selCh').onchange = () => store.set('ch', $('selCh').value);
+  $('srcNote').textContent = `パラメータ定義: ${DATA.src}。BOSS・Rolandとは無関係の非公式ツールです。`;
+  document.addEventListener('click', (e) => { const d = $('ports'); if (d.open && !d.contains(e.target)) d.open = false; });
+
+  // environment hint
+  if (!('requestMIDIAccess' in navigator)) $('envNotice').innerHTML = '<p class="notice err">このブラウザはWeb MIDIに対応していません。ChromeかEdgeで開いてください。</p>';
+  else if (!window.isSecureContext) $('envNotice').innerHTML = '<p class="notice err">HTTPSかローカルファイルとして開いてください（Web MIDIが使えません）。</p>';
+
+  window.__gp10ed = { S, BLOCKS, getVal, display, encode, visibleParams, byName };
+})();
+</script>
+</body>
+</html>
