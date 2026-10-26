@@ -1,93 +1,59 @@
 # GP-10 Web Editor
 
-BOSS GP-10 用の非公式 Web MIDI エディタです。ブラウザから GP-10 と SysEx（RQ1 / DT1）で直接通信し、現在のパッチを読み込んで編集できます。インストール不要の HTML 1 ファイルで動きます。
+BOSS GP-10 用の非公式エディタです。ブラウザから GP-10 と直接通信して、現在のパッチを編集できます。インストール不要の HTML 1 ファイルで動きます。
 
-> An unofficial, single-file Web MIDI editor for the BOSS GP-10 guitar processor. Open `index.html` in Chrome or Edge, press 「接続」 (Connect), and allow MIDI SysEx access.
+> An unofficial browser editor for the BOSS GP-10. Open `index.html` in Chrome or Edge and press Connect.
 
 BOSS / Roland とは無関係の個人制作ツールです。BOSS、GP-10、Roland は Roland Corporation の商標です。
 
 ## 使い方
 
-1. GP-10 のドライバ（BOSS 公式）を入れて、USB で接続します。
-2. `index.html` を Chrome か Edge で開きます（ローカルファイルのままでも、HTTPS で配信しても動きます。Safari と Firefox は Web MIDI の SysEx に対応していないため使えません）。
-3. 右上の「接続」を押し、MIDI デバイスの使用（SysEx）を許可します。
+1. GP-10 のドライバ（BOSS 公式）を入れて、USB でつなぎます。
+2. `index.html` を Chrome か Edge で開きます（Safari と Firefox は非対応）。
+3. 「Connect」を押し、MIDI デバイスの使用を許可します。
 4. 現在のパッチが読み込まれます。動かした値はすぐに本体へ送られます。
-5. 保存は本体の WRITE ボタンで行ってください（エディタが書き換えるのは現在のパッチ＝テンポラリだけです）。
-
-MIDI ポートは「GP-10」を選びます（「GP-10 DAW CTRL」ではありません）。名前に GP-10 を含むポートは自動で選ばれます。
+5. 保存は本体の WRITE ボタンで行ってください。
 
 ### ドライバなしで使う（Android など）
 
-「Connect over USB」を押すと、WebUSB で Chrome が GP-10 と直接通信します。ドライバを入れられない Android の Chrome を想定した接続方法です。
+「Connect over USB」を押すと、ドライバを通さずに Chrome が GP-10 と直接通信します（WebUSB）。
 
-- Android: GP-10 を USB OTG アダプタでつなぎ、HTTPS で公開したページ（GitHub Pages など）を Chrome で開いて「Connect over USB」を押します。※実機ではまだ試していません
-- Mac: GP-10 のドライバを止めているか入れていないときだけ使えます（ドライバなしの Mac で動作確認済み）。ドライバが動いているとドライバが GP-10 を使っているため接続できません。その場合は通常の「Connect」を使ってください
-- Windows: ドライバを入れずにつなぐと、Chrome から GP-10 を開けません（WinUSB の割り当てが必要なため）。通常の「Connect」を使ってください
-- 接続中は、BOSS TONE STUDIO などほかのアプリから GP-10 の MIDI を使えません。タブを閉じるか、MIDI メニューの「Use MIDI ports instead」で手放します
-- 最後に使った接続方法を覚えていて、次回は「Connect」もそちらでつなぎます
+- Android: OTG アダプタで GP-10 をつなぎ、公開ページを Chrome で開きます（実機では未確認）
+- Mac: ドライバを入れていないか、止めているときだけ使えます
+- Windows: 使えません。ドライバを入れて「Connect」を使ってください
+- 接続中は、BOSS TONE STUDIO などほかのアプリから GP-10 を使えません
 
-中身は、GP-10 の MIDI 用インターフェース（interface 3、bulk OUT 3 / IN 4）を確保して、標準の USB-MIDI 1.0 パケット（4 バイト単位）で SysEx をやり取りしているだけです。GP-10 には仮想ケーブルが 2 本あり、ケーブル 0 が「GP-10」、ケーブル 1 が「GP-10 DAW CTRL」に当たります。エディタはケーブル 0 だけを使います。
+iPhone / iPad では使えません。
 
 ## できること
 
-画面は Line 6 HX Edit を参考にした 2 段構成です。上に信号経路、下に選んだブロックの設定、右にモデルの一覧が並びます。画面の表記は英語です。
-
-- **信号経路**: エフェクトチェーンの順番どおりにブロックを並べます。ON のブロックは上端の LED が点灯し、ブロックの中には設定値から描いた小さな図（AMP の歪み、DELAY の反復、REVERB の減衰、EQ のカーブなど）が出ます。クリックで編集、ダブルクリックか電源ボタンで ON/OFF、ドラッグか「Move left / Move right」で並べ替え（Effects Chain の 11 バイトを書き換え）。ノーマル PU は下の経路から MIXER で合流します。
-- **パラメータのタイル**: 大きな数字と細いバーで値を表示します。マウスはドラッグ、タッチは横スワイプで値を変えます（縦方向はスクロール）。選択したタイルの「−」「＋」（長押しで連続）、矢印キー、選択中のホイールでも調整でき、ダブルクリック・もう一度タップ・Enter で値を直接入力できます。選択肢の項目はタップで一覧が開き、ON/OFF の項目はタップで切り替わります。値は本体と同じ単位・表記で表示します。
-- **モデル一覧**: AMP TYPE、FX の種類、DELAY/REVERB のタイプ、Modeling の楽器とモデルを、クリックひとつで切り替えて試せます。
-- **パッチ全体の設定**: Patch（レベル・テンポ）、Tuning、Controllers、Assigns 1〜8。
-- **Tuning（指板表示）**: 6 弦を指板として描き、各弦がどの音で鳴るかを丸の位置と音名（E → D など）で表示します。中央のナットが 0 で、フレットをクリック／タップするか弦を横にドラッグして半音単位で変更し、右の目盛りでセント（±50）を調整します。表示は ±12 半音で、それを超えると ±24 に広がります。
-  - Alternate tuning: OPEN / DROP / STEP / D-MODAL / NASHVL / USER を選ぶと結果の音がすぐ出ます。プリセットの弦を動かすと、その音を USER に写してから編集します（プリセットの音は一般的なチューニングから算出。本体での確認はこれから）
-  - 12-string: 追加弦を丸、元の弦を輪で表示。Level と Delay は弦ごとのタイル
-  - String bend: 開放弦からベンド後の音までをバーで表示
-- 現在のパッチ（37 ブロック・609 項目）の一括読み込み。変更は DT1 で即時送信
-- パッチ名の編集、99 パッチの一覧（絞り込みつき）と切り替え、本体側のパッチ切り替えへの追従
-- 「Follow device」で、本体のつまみでの変更を定期的に読み直して反映
-- パッチの `.syx` 保存・読み込み（読み込んだデータは現在のパッチに送られます）
-- MIDI ログ（画面下の「MIDI log」）
-
-iPhone / iPad のブラウザは Web MIDI にも WebUSB にも対応していないため使えません。Android のスマートフォンやタブレットでは「Connect over USB」で使える見込みです（上記）。
+- 信号経路の表示と、ブロックの ON/OFF・並べ替え
+- 各ブロックのパラメータ編集とモデルの切り替え
+- チューニングの編集（Alternate tuning / 12-string / String bend）
+- パッチ名の編集、99 パッチの一覧と切り替え
+- `.syx` の保存・読み込み
 
 ### まだできないこと
 
 - ユーザーパッチへの直接書き込み（本体の WRITE を使ってください）
-- ASSIGN の TARGET（0〜4095）の名前表示（公式資料に対応表がないため番号のまま）
-
-## 構成
-
-| パス | 内容 |
-|---|---|
-| `index.html` | エディタ本体（`tools/` から生成。データ埋め込み済みの 1 ファイル） |
-| `bench/index.html` | GP-10 SysEx Bench。Identity / RQ1 / アドレススキャン / ダンプ差分 / ラベル付けの調査用ツール |
-| `bench/usb.html` | GP-10 USB probe。WebUSB でドライバなしに GP-10 と通信できるかを確かめる確認ページ（USB の構成表示と、USB-MIDI パケットでの Identity Request 送受信） |
-| `data/gp10-address-map.json` | GP-10 のアドレスマップ（Setup・System・パッチ全 37 ブロック、名前・範囲・表示変換・選択肢） |
-| `tools/editor.template.html` | エディタのテンプレート |
-| `tools/usbmidi.js` | WebUSB 経由の USB-MIDI 送受信（ビルド時にエディタへ埋め込み） |
-| `tools/gen_data.py` | アドレスマップと `usbmidi.js` をテンプレートに埋め込み、`index.html` を生成 |
-| `tools/parse_mi.py` | 公式 MIDI Implementation（PDF をテキスト化したもの）からアドレスマップを生成 |
-| `tests/` | 擬似 GP-10（`mock-gp10.js`、Web MIDI と WebUSB の両方を模擬）を使った Playwright のテストと、USB-MIDI パケット処理の単体テスト。`fixtures/` は実機のテンポラリパッチのダンプ |
-
-## GP-10 の SysEx について（要点）
-
-- Roland 形式。Device ID `10`、Model ID `00 00 00 05`、Identity Reply の Family は `05 03`
-- 番地: `00 00 00 00` Setup、`10 00 00 00` System、`20 00 00 00` 現在のパッチ（テンポラリ）
-- ユーザーパッチ p（1〜99）は `20 00 00 00` から 2 バイト目を 4p 進めた位置（7 ビット繰り上がり）。User 1 = `20 04 00 00`、User 99 = `23 0C 00 00`
-- RQ1 はブロック単位で DT1 を返す。`20 00 00 00` にサイズ `00 04 00 00` を指定すると、パッチ全体（37 ブロック・693 バイト）が返る
-- 2 バイト以上の項目（Delay Time など）は 1 バイト 4 ビットずつ上位から格納
-- 本体でパッチを切り替えると `B0 00 00` / `B0 20 00` / `C0 (p-1)` が送られてくる
-- 本体側でつまみを動かしても DT1 は自動送信されない（そのため定期読み直しで反映）
-
-アドレスマップは BOSS 公式の「GP-10 MIDI Implementation Ver.1.01」から機械抽出し、全 37 ブロックの長さと全 693 バイトの値の範囲を実機ダンプで照合しています。
 
 ## 開発
 
 ```sh
-npm install            # Playwright（テスト用）
-npm run build          # data/ と tools/editor.template.html から index.html を生成
-npm test               # 擬似 GP-10 でエディタ（Web MIDI / USB）と Bench をテスト
+npm install      # Playwright（テスト用）
+npm run build    # data/ と tools/ から index.html を生成
+npm test         # 擬似 GP-10 でテスト
 ```
 
-アドレスマップを作り直す場合は、BOSS の公式サイトから GP-10 の MIDI Implementation（PDF）を各自で入手し、テキスト化してから実行します（PDF はリポジトリに含めていません）。
+| パス | 内容 |
+|---|---|
+| `index.html` | エディタ本体（生成物） |
+| `tools/` | エディタのテンプレート、USB-MIDI 送受信、生成スクリプト |
+| `data/gp10-address-map.json` | GP-10 のアドレスマップ |
+| `bench/` | SysEx と USB の調査用ページ |
+| `tests/` | テスト |
+
+アドレスマップは BOSS 公式の「GP-10 MIDI Implementation」から生成しています。作り直す場合は PDF を各自で入手してください（リポジトリには含めていません）。
 
 ```sh
 pdftotext -layout GP-10_MIDI_Imple_e02_W.pdf mi.txt
