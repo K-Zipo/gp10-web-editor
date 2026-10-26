@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,7 +12,10 @@
   --base: #2a2c30;
   --panel: #33363b;
   --panel-hi: #3b3f45;
+  --cell: #2e3135;
+  --cell-hi: #34373c;
   --rail: #1e2023;
+  --well: #18191c;
   --line: #474b52;
   --ink: #e8e4da;
   --muted: #9a9da3;
@@ -33,24 +36,22 @@
   --c-ns: #45bfae;
   --c-fv: #b8ab8a;
   --c-patch: #d9d4c7;
-  --knob-body: #17181a;
   --font: "Barlow Semi Condensed", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
   --lcd: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
-body { background: var(--base); color: var(--ink); font: 500 15px/1.35 var(--font); font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
+body { background: var(--base); color: var(--ink); font: 500 15px/1.35 var(--font); font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
 :focus-visible { outline: 2px solid var(--mustard); outline-offset: 2px; }
 [hidden] { display: none !important; }
-
 .app { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; grid-template-columns: minmax(0, 1fr); height: 100%; }
 
 /* ---------- top bar ---------- */
-.top { display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: var(--rail); border-bottom: 1px solid #000; flex-wrap: wrap; }
-.brand { font-weight: 700; font-size: 18px; letter-spacing: .01em; white-space: nowrap; }
+.top { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: var(--rail); border-bottom: 1px solid #000; flex-wrap: wrap; }
+.brand { font-weight: 700; font-size: 18px; white-space: nowrap; }
 .brand span { color: var(--mustard); }
 .lcd { display: flex; align-items: center; gap: 12px; padding: 5px 12px 5px 10px; border-radius: 4px; background: #0f1011; box-shadow: inset 0 0 0 1px #000, inset 0 0 0 3px #2b2d30; min-width: 0; }
 .lcd .no { font: 700 20px/1 var(--lcd); color: var(--mustard); min-width: 2ch; }
@@ -58,11 +59,11 @@ button { cursor: pointer; }
 .lcd input:focus { outline: none; box-shadow: 0 1px 0 var(--mustard); }
 .lcd input::placeholder { color: var(--faint); }
 .spacer { flex: 1; }
-.tbtn { background: transparent; border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; font-weight: 600; font-size: 14px; color: var(--ink); white-space: nowrap; }
+.tbtn { background: transparent; border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; font-weight: 600; font-size: 14px; color: var(--ink); white-space: nowrap; min-height: 34px; }
 .tbtn:hover:not(:disabled) { border-color: var(--muted); }
 .tbtn:disabled { opacity: .4; cursor: default; }
 .tbtn.primary { background: var(--mustard); border-color: var(--mustard); color: var(--mustard-ink); }
-.toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); white-space: nowrap; cursor: pointer; user-select: none; }
+.toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); white-space: nowrap; cursor: pointer; user-select: none; min-height: 34px; }
 .toggle input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .toggle .sw { width: 30px; height: 16px; border-radius: 8px; background: var(--line); position: relative; transition: background .15s; }
 .toggle .sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--ink); transition: transform .15s; }
@@ -80,36 +81,38 @@ button { cursor: pointer; }
 .patches { background: var(--rail); border-right: 1px solid #000; display: flex; flex-direction: column; min-height: 0; }
 .patches-head { display: flex; gap: 8px; align-items: center; padding: 12px 12px 8px; }
 .patches-head h2 { margin: 0; font-size: 15px; font-weight: 700; flex: 1; }
-.patches-head button { font-size: 13px; padding: 4px 10px; }
-.search { margin: 0 12px 8px; background: var(--base); border: 1px solid var(--line); border-radius: 5px; padding: 5px 9px; font-size: 14px; }
+.patches-head button { font-size: 13px; padding: 4px 10px; min-height: 30px; }
+.search { margin: 0 12px 8px; background: var(--base); border: 1px solid var(--line); border-radius: 5px; padding: 6px 9px; font-size: 14px; }
 .plist { list-style: none; margin: 0; padding: 0 0 12px; overflow: auto; flex: 1; }
-.plist li { display: grid; grid-template-columns: 26px 1fr; gap: 8px; padding: 5px 12px; font-size: 14px; cursor: pointer; border-left: 3px solid transparent; white-space: nowrap; }
+.plist li { display: grid; grid-template-columns: 26px 1fr; gap: 8px; padding: 6px 12px; font-size: 14px; cursor: pointer; border-left: 3px solid transparent; white-space: nowrap; }
 .plist li:hover { background: #26282b; }
 .plist li .n { color: var(--faint); text-align: right; }
 .plist li.cur { border-left-color: var(--mustard); background: #2c2a22; color: #fff; }
 .plist li.cur .n { color: var(--mustard); }
 .plist .hint { color: var(--muted); font-size: 13px; padding: 4px 12px 0; cursor: default; display: block; border: 0; white-space: normal; }
 .plist .hint:hover { background: none; }
-
 .work { display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: minmax(0, 1fr); min-height: 0; min-width: 0; }
 
 /* ---------- signal rail ---------- */
-.railwrap { padding: 18px 18px 14px; border-bottom: 1px solid #000; overflow-x: auto; background: linear-gradient(#2e3034, var(--base)); }
-.rail { display: grid; grid-auto-columns: max-content; grid-template-rows: auto auto; column-gap: 0; row-gap: 10px; align-items: center; width: max-content; }
+.railwrap { padding: 16px 18px 12px; border-bottom: 1px solid #000; overflow-x: auto; background: linear-gradient(#2e3034, var(--base)); }
+.rail { display: grid; grid-auto-columns: max-content; grid-template-rows: auto auto; row-gap: 10px; align-items: center; width: max-content; }
 .seg { height: 2px; background: #5a5e66; width: 10px; align-self: center; }
-.tile { position: relative; width: 80px; height: 74px; border-radius: 9px; background: var(--panel); border: 1px solid #000; box-shadow: inset 0 1px 0 rgba(255,255,255,.06); padding: 12px 9px 8px; display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; cursor: pointer; user-select: none; text-align: left; transition: transform .12s, box-shadow .12s; }
-.tile::before { content: ''; position: absolute; left: 8px; right: 28px; top: 8px; height: 3px; border-radius: 2px; background: #45484e; }
+.tile { position: relative; width: 82px; height: 98px; border-radius: 8px; background: var(--panel); border: 1px solid #000; box-shadow: inset 0 1px 0 rgba(255,255,255,.06); padding: 24px 8px 7px; display: grid; grid-template-rows: auto 1fr auto; cursor: pointer; user-select: none; transition: transform .12s, box-shadow .12s; }
+.tile::before { content: ''; position: absolute; left: 8px; right: 32px; top: 8px; height: 3px; border-radius: 2px; background: #45484e; }
 .tile.on::before { background: var(--cat); box-shadow: 0 0 8px var(--cat); }
-.tile .ab { font-weight: 700; font-size: 16px; letter-spacing: .02em; color: var(--ink); }
+.tile .ab { font-weight: 700; font-size: 15px; letter-spacing: .02em; color: var(--ink); }
+.tile .gr { display: block; width: 100%; height: 26px; align-self: center; }
+.tile .gr svg { width: 100%; height: 100%; display: block; overflow: visible; }
 .tile .md { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tile.off .ab { color: var(--faint); }
+.tile.off .gr { opacity: .4; }
 .tile.sel { box-shadow: 0 0 0 2px var(--mustard), inset 0 1px 0 rgba(255,255,255,.06); transform: translateY(-2px); background: var(--panel-hi); }
-.tile .pw { position: absolute; right: 3px; top: 1px; width: 22px; height: 22px; border-radius: 50%; border: 0; background: transparent; color: var(--faint); display: grid; place-items: center; padding: 0; }
+.tile .pw { position: absolute; right: 2px; top: 1px; width: 28px; height: 22px; border-radius: 6px; border: 0; background: transparent; color: var(--faint); display: grid; place-items: center; padding: 0; }
 .tile .pw:hover { color: var(--ink); background: rgba(255,255,255,.06); }
 .tile.on .pw { color: var(--cat); }
 .tile .pw svg { width: 13px; height: 13px; }
 .tile.dragging { opacity: .35; }
-.tile.drop-before { box-shadow: -4px 0 0 0 var(--mustard); }
+.tile.drop-before, .node.drop-before { box-shadow: -4px 0 0 0 var(--mustard); }
 .node { position: relative; width: 46px; height: 16px; display: grid; place-items: center; font-size: 12px; color: var(--muted); cursor: grab; background: none; border: 0; padding: 0; }
 .node i { width: 14px; height: 14px; transform: rotate(45deg); border: 2px solid #8a8e96; background: var(--rail); display: block; }
 .node span { position: absolute; bottom: 22px; left: -6px; right: -6px; text-align: center; }
@@ -118,106 +121,147 @@ button { cursor: pointer; }
 .node.sel { color: var(--mustard); }
 .endcap { font-size: 13px; color: var(--faint); padding: 0 4px 0 6px; }
 .lane { height: 2px; background: #5a5e66; align-self: center; }
-.elbow { justify-self: start; align-self: center; width: calc(50% + 1px); height: 86px; transform: translateY(-42px); border-right: 2px solid #5a5e66; border-bottom: 2px solid #5a5e66; border-bottom-right-radius: 10px; }
+.elbow { justify-self: start; align-self: center; width: calc(50% + 1px); height: 110px; transform: translateY(-54px); border-right: 2px solid #5a5e66; border-bottom: 2px solid #5a5e66; border-bottom-right-radius: 10px; }
 .railnote { font-size: 12px; color: var(--faint); margin-top: 10px; }
 
 /* ---------- inspector ---------- */
 .inspector { display: grid; grid-template-columns: minmax(0, 1fr) 236px; min-height: 0; }
-.insp-main { display: flex; flex-direction: column; min-height: 0; }
-.insp-head { display: flex; align-items: center; gap: 14px; padding: 14px 18px 12px; flex-wrap: wrap; border-bottom: 1px solid #23252a; }
+.insp-main { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.insp-head { display: flex; align-items: center; gap: 12px; padding: 14px 18px 12px; flex-wrap: wrap; border-bottom: 1px solid #23252a; min-width: 0; }
 .insp-title { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
 .insp-title .bar { width: 4px; height: 26px; border-radius: 2px; background: var(--cat, var(--muted)); align-self: center; }
-.insp-title h2 { margin: 0; font-size: 22px; font-weight: 700; }
+.insp-title h2 { margin: 0; font-size: 22px; font-weight: 700; white-space: nowrap; }
 .insp-title .model { font-size: 17px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.power { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 4px 12px 4px 5px; font-weight: 700; font-size: 13px; color: var(--muted); }
+.power { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 4px 12px 4px 5px; font-weight: 700; font-size: 13px; color: var(--muted); min-height: 30px; }
 .power i { width: 16px; height: 16px; border-radius: 50%; background: #45484e; }
 .power.on { color: var(--ink); border-color: var(--cat); }
 .power.on i { background: var(--cat); box-shadow: 0 0 8px var(--cat); }
-.views { display: flex; gap: 2px; margin-left: auto; background: var(--rail); border-radius: 7px; padding: 3px; }
-.views button { border: 0; background: transparent; color: var(--muted); padding: 5px 12px; border-radius: 5px; font-weight: 600; font-size: 14px; white-space: nowrap; }
+.move { display: inline-flex; gap: 4px; }
+.move button { background: transparent; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); font-size: 13px; font-weight: 600; padding: 4px 10px; min-height: 30px; }
+.move button:hover:not(:disabled) { color: var(--ink); border-color: var(--muted); }
+.move button:disabled { opacity: .35; cursor: default; }
+.views { display: flex; gap: 2px; margin-left: auto; background: var(--rail); border-radius: 7px; padding: 3px; min-width: 0; }
+.views button { border: 0; background: transparent; color: var(--muted); padding: 5px 12px; border-radius: 5px; font-weight: 600; font-size: 14px; white-space: nowrap; min-height: 30px; }
 .views button:hover { color: var(--ink); }
 .views button.sel { background: var(--panel-hi); color: var(--ink); }
-.ctls { flex: 1; overflow: auto; padding: 16px 18px 22px; display: flex; flex-wrap: wrap; gap: 18px 26px; align-content: flex-start; }
-.group { display: grid; gap: 10px; align-content: start; }
-.group > h3 { margin: 0; font-size: 13px; font-weight: 600; color: var(--muted); border-bottom: 1px solid #3a3d43; padding-bottom: 5px; }
-.group .row { display: flex; flex-wrap: wrap; gap: 14px 6px; }
-.ctl { width: 84px; display: grid; justify-items: center; gap: 3px; text-align: center; position: relative; }
-.ctl .v { font-size: 14px; font-weight: 600; min-height: 18px; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
-.ctl .n { font-size: 12.5px; color: var(--muted); line-height: 1.2; max-width: 100%; overflow-wrap: anywhere; }
-.ctl.dirty .v { color: var(--mustard); }
-.knob { width: 58px; height: 58px; touch-action: none; cursor: ns-resize; border-radius: 50%; }
-.knob svg { width: 100%; height: 100%; display: block; overflow: visible; }
-.knob .trk { stroke: #17181a; }
-.knob .val { stroke: var(--cat, var(--mustard)); }
-.knob:focus-visible { outline-offset: 0; }
-.ctl input.edit { position: absolute; top: 20px; left: 4px; width: 76px; text-align: center; background: var(--rail); border: 1px solid var(--mustard); border-radius: 4px; padding: 3px; font-size: 14px; }
-.ctl.wide { width: 176px; justify-items: stretch; text-align: left; padding-top: 31px; }
-.ctl.wide .selbox { margin-bottom: 10px; }
-.ctl.wide .n { text-align: left; }
-.selbox { position: relative; }
-.selbox select { appearance: none; -webkit-appearance: none; width: 100%; background: #0f1011; border: 1px solid #000; box-shadow: inset 0 0 0 2px #2b2d30; border-radius: 4px; color: #f3ead2; font: 500 14px/1.2 var(--lcd); padding: 9px 26px 9px 10px; cursor: pointer; }
-.selbox::after { content: ''; position: absolute; right: 10px; top: 50%; width: 6px; height: 6px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: translateY(-70%) rotate(45deg); pointer-events: none; }
-.ctl.sw { justify-items: center; }
-.swbtn { width: 46px; height: 58px; border-radius: 8px; border: 1px solid #000; background: linear-gradient(#3b3e44, #2a2c30); display: grid; place-items: center; padding: 0; }
-.swbtn i { width: 12px; height: 12px; border-radius: 50%; background: #45484e; }
-.swbtn[aria-pressed="true"] i { background: var(--cat, var(--mustard)); box-shadow: 0 0 8px var(--cat, var(--mustard)); }
+
+/* parameter cells */
+.ctls { flex: 1; overflow: auto; padding: 14px 18px 26px; display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 3px; align-content: start; }
+.ghead { grid-column: 1 / -1; font-size: 13px; font-weight: 600; color: var(--muted); padding: 14px 2px 5px; }
+.ghead:first-child { padding-top: 0; }
+.cell { position: relative; min-height: 94px; padding: 9px 11px 11px; background: var(--cell); border-radius: 4px; display: grid; grid-template-rows: auto 1fr auto; user-select: none; touch-action: pan-y; cursor: ew-resize; outline: none; min-width: 0; }
+.cell:hover { background: var(--cell-hi); }
+.cell:focus-visible, .cell.focus { box-shadow: inset 0 0 0 2px var(--mustard); }
+.cell.drag { background: var(--cell-hi); cursor: grabbing; }
+.cell.wide { grid-column: span 2; }
+.cell .n { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 4px; }
+.cell .big { align-self: end; font-weight: 700; font-size: 32px; line-height: 1; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-bottom: 2px; }
+.cell .big small { font-size: 15px; color: var(--muted); font-weight: 600; margin-left: 3px; letter-spacing: 0; }
+.cell .big.m { font-size: 24px; }
+.cell .big.s { font-size: 19px; }
+.cell .bar { height: 4px; background: var(--well); border-radius: 2px; position: relative; overflow: hidden; margin-top: 8px; }
+.cell .bar i { position: absolute; top: 0; bottom: 0; background: var(--cat, var(--mustard)); border-radius: 2px; }
+.cell .bar.center::before { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--faint); }
+.cell .steps { display: flex; gap: 3px; margin-top: 8px; }
+.cell .steps i { flex: 1; height: 4px; border-radius: 2px; background: var(--well); }
+.cell .steps i.on { background: var(--cat, var(--mustard)); }
+.cell.list { cursor: pointer; }
+.cell.list .n::after { content: ''; display: inline-block; width: 5px; height: 5px; border-right: 1.5px solid var(--faint); border-bottom: 1.5px solid var(--faint); transform: translateY(-3px) rotate(45deg); margin-left: 7px; }
+.cell.sw { cursor: pointer; touch-action: manipulation; }
+.cell.sw .big { font-size: 26px; color: var(--faint); }
+.cell.sw.on { background: color-mix(in srgb, var(--cat) 16%, var(--cell)); }
+.cell.sw.on .big { color: var(--cat); }
+.cell .pip { position: absolute; right: 12px; top: 13px; width: 9px; height: 9px; border-radius: 50%; background: #45484e; }
+.cell.sw.on .pip { background: var(--cat); box-shadow: 0 0 8px var(--cat); }
+.cell .pm { position: absolute; right: 5px; top: 5px; display: none; gap: 3px; }
+.cell .pm button { width: 30px; height: 26px; border-radius: 5px; border: 0; background: var(--well); color: var(--ink); font-weight: 700; font-size: 16px; line-height: 1; padding: 0; touch-action: manipulation; }
+.cell .pm button:hover { background: #000; }
+.cell:focus .pm, .cell.focus .pm { display: flex; }
+@media (hover: hover) { .cell:hover .pm { display: flex; } }
+.cell input.edit { position: absolute; left: 8px; right: 8px; bottom: 22px; font: 700 24px var(--font); background: var(--well); border: 1px solid var(--mustard); border-radius: 4px; padding: 2px 6px; color: var(--ink); min-width: 0; }
+.none { grid-column: 1 / -1; color: var(--muted); }
+
+/* option picker */
+.picker { position: fixed; z-index: 50; background: var(--panel); border: 1px solid #000; border-radius: 8px; box-shadow: 0 18px 50px rgba(0,0,0,.55); padding: 10px; width: min(420px, calc(100vw - 24px)); max-height: min(420px, calc(100vh - 40px)); display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 8px; }
+.picker header { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); padding: 0 2px; }
+.picker header strong { color: var(--ink); font-weight: 600; }
+.picker .opts { overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 3px; }
+.picker .opts button { text-align: left; background: var(--cell); border: 0; border-radius: 4px; padding: 9px 10px; font-size: 14px; font-weight: 600; min-height: 40px; }
+.picker .opts button:hover { background: var(--cell-hi); }
+.picker .opts button[aria-current="true"] { background: color-mix(in srgb, var(--cat, var(--mustard)) 30%, var(--cell)); box-shadow: inset 3px 0 0 var(--cat, var(--mustard)); }
+.scrim { position: fixed; inset: 0; z-index: 45; }
 
 /* model browser */
 .browser { border-left: 1px solid #000; background: var(--rail); overflow: auto; padding: 14px 0 20px; }
 .browser h3 { margin: 0 0 6px; padding: 0 14px; font-size: 13px; font-weight: 600; color: var(--muted); }
 .browser h3 + ul { margin-bottom: 16px; }
 .browser ul { list-style: none; margin: 0; padding: 0; }
-.browser li button { width: 100%; text-align: left; background: none; border: 0; border-left: 3px solid transparent; padding: 5px 14px 5px 11px; font-size: 14px; color: var(--ink); }
+.browser li button { width: 100%; text-align: left; background: none; border: 0; border-left: 3px solid transparent; padding: 6px 14px 6px 11px; font-size: 14px; color: var(--ink); }
 .browser li button:hover { background: #26282b; }
 .browser li button[aria-current="true"] { border-left-color: var(--cat, var(--mustard)); background: #2c2d30; font-weight: 700; }
-.browser .none { padding: 0 14px; font-size: 13px; color: var(--faint); }
 
 /* empty state */
 .welcome { grid-row: 1 / span 2; display: grid; place-items: center; padding: 40px 20px; }
-.welcome .box { max-width: 460px; text-align: center; display: grid; gap: 14px; justify-items: center; }
-.welcome h1 { margin: 0; font-size: 28px; font-weight: 700; }
-.welcome p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.55; }
+.welcome .box { max-width: 480px; display: grid; gap: 14px; }
+.welcome h1 { margin: 0; font-size: 40px; font-weight: 700; line-height: 1.05; }
+.welcome p { margin: 0; color: var(--muted); font-size: 16px; line-height: 1.55; }
 .welcome .err { color: var(--danger); }
-.welcome .knobdeco { width: 96px; height: 96px; }
+.welcome .demo { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; margin-bottom: 6px; }
+.welcome .demo div { background: var(--cell); border-radius: 4px; padding: 9px 11px 11px; display: grid; gap: 6px; }
+.welcome .demo span { font-size: 13px; color: var(--muted); }
+.welcome .demo b { font-size: 30px; line-height: 1; }
+.welcome .demo i { height: 4px; border-radius: 2px; background: var(--well); position: relative; overflow: hidden; display: block; }
+.welcome .demo i::after { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--w); background: var(--c); border-radius: 2px; }
+.welcome .actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
 /* status bar */
-.status { display: flex; align-items: center; gap: 18px; padding: 6px 16px; background: var(--rail); border-top: 1px solid #000; font-size: 13px; color: var(--muted); min-height: 32px; }
-.status .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--faint); margin-right: 7px; vertical-align: 0; }
+.status { display: flex; align-items: center; gap: 18px; padding: 6px 16px; background: var(--rail); border-top: 1px solid #000; font-size: 13px; color: var(--muted); min-height: 32px; min-width: 0; }
+.status .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--faint); margin-right: 7px; }
 .status .dot.ok { background: var(--ok); }
 .status .dot.busy { background: var(--mustard); }
 .status .dot.err { background: var(--danger); }
-.status .last { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.status button { background: none; border: 0; color: var(--muted); font-size: 13px; padding: 2px 4px; }
+.status .st { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.status .last { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; min-width: 0; }
+.status button { background: none; border: 0; color: var(--muted); font-size: 13px; padding: 2px 4px; white-space: nowrap; }
 .status button:hover { color: var(--ink); }
 .drawer { position: fixed; left: 0; right: 0; bottom: 32px; height: 38vh; background: #151618; border-top: 1px solid var(--line); z-index: 40; display: grid; grid-template-rows: auto 1fr; }
 .drawer header { display: flex; align-items: center; gap: 10px; padding: 8px 16px; font-size: 13px; color: var(--muted); }
 .drawer header strong { color: var(--ink); font-weight: 600; }
 .drawer pre { margin: 0; padding: 4px 16px 14px; overflow: auto; font: 12px/1.6 var(--lcd); color: #b9b6ad; white-space: pre-wrap; word-break: break-all; }
 
-@media (max-width: 1100px) {
-  .inspector { grid-template-columns: minmax(0, 1fr) 200px; }
-}
+@media (max-width: 1100px) { .inspector { grid-template-columns: minmax(0, 1fr) 200px; } }
 @media (max-width: 860px) {
   .body { grid-template-columns: minmax(0, 1fr); }
   .patches { position: fixed; z-index: 35; top: 0; bottom: 32px; left: 0; width: min(280px, 86vw); transform: translateX(-100%); box-shadow: 8px 0 30px rgba(0,0,0,.5); }
   .patches.anim { transition: transform .2s; }
   .patches.open { transform: none; }
   .inspector { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
-  .browser { border-left: 0; border-bottom: 1px solid #000; max-height: 168px; padding-top: 10px; }
+  .browser { border-left: 0; border-bottom: 1px solid #000; max-height: 150px; padding-top: 10px; order: -1; }
   .browser ul { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 12px; }
-  .browser li button { border: 1px solid var(--line); border-radius: 5px; padding: 3px 9px; }
+  .browser li button { border: 1px solid var(--line); border-radius: 5px; padding: 5px 10px; }
   .browser li button[aria-current="true"] { border-color: var(--cat, var(--mustard)); }
-  .inspector .browser { order: -1; }
-  .views { margin-left: 0; overflow-x: auto; min-width: 0; flex: 1 1 100%; }
-  .insp-head { min-width: 0; }
+  .views { margin-left: 0; overflow-x: auto; flex: 1 1 100%; }
 }
 @media (min-width: 861px) { #btnPatches { display: none; } }
 @media (max-width: 560px) {
   .top { gap: 8px; padding: 8px 12px; }
   .lcd input { width: 12ch; font-size: 16px; }
-  .railwrap { padding-left: 16px; padding-right: 16px; }
-  .ctls { padding-left: 16px; padding-right: 16px; }
-  .ctl.wide { width: 100%; }
+  .railwrap, .ctls { padding-left: 12px; padding-right: 12px; }
+  .ctls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cell .big { font-size: 28px; }
+  .picker { left: 0 !important; right: 0; bottom: 0; top: auto !important; width: 100%; max-height: 60vh; border-radius: 12px 12px 0 0; padding-bottom: 20px; }
+  .welcome h1 { font-size: 32px; }
+  /* on phones the whole page scrolls instead of each pane */
+  .app { height: auto; min-height: 100%; }
+  .body, .work, .inspector, .insp-main { min-height: 0; }
+  .ctls { overflow: visible; flex: none; }
+  .status { position: sticky; bottom: 0; z-index: 20; }
+  .railnote { display: none; }
+  .railwrap { padding-top: 26px; }
+  .top .tbtn { padding: 4px 9px; min-height: 30px; font-size: 13px; }
+  .browser { max-height: 116px; }
+  .insp-head { padding: 12px 12px 10px; gap: 8px; }
+  .insp-title h2 { font-size: 20px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -225,77 +269,87 @@ button { cursor: pointer; }
 <body>
 <div class="app">
   <header class="top">
-    <button class="tbtn" id="btnPatches" aria-controls="patches">パッチ</button>
+    <button class="tbtn" id="btnPatches" aria-controls="patches">Patches</button>
     <div class="brand"><span>GP-10</span> Editor</div>
-    <div class="lcd" title="現在のパッチ（テンポラリ）。名前は直接書き換えられます">
+    <div class="lcd" title="The current (temporary) patch. Type to rename it.">
       <span class="no" id="patchNo">--</span>
-      <input id="patchName" maxlength="12" spellcheck="false" autocomplete="off" placeholder="未接続" aria-label="パッチ名" disabled>
+      <input id="patchName" maxlength="12" spellcheck="false" autocomplete="off" placeholder="Not connected" aria-label="Patch name" disabled>
     </div>
     <span class="spacer"></span>
-    <label class="toggle" title="本体側でつまみを回した変更を、1.5秒ごとに読み直して反映します"><input type="checkbox" id="chkSync"><span class="sw"></span>本体と同期</label>
-    <button class="tbtn" id="btnReload" disabled>読み直す</button>
-    <button class="tbtn" id="btnExport" disabled>.syxに保存</button>
-    <button class="tbtn" id="btnImport" disabled>.syxを開く</button>
+    <label class="toggle" title="Re-read the patch every 1.5 s so changes made on the GP-10 show up here"><input type="checkbox" id="chkSync"><span class="sw"></span>Follow device</label>
+    <button class="tbtn" id="btnReload" disabled>Reload</button>
+    <button class="tbtn" id="btnExport" disabled>Save .syx</button>
+    <button class="tbtn" id="btnImport" disabled>Open .syx</button>
     <input type="file" id="fileSyx" accept=".syx,application/octet-stream" hidden>
     <div class="pop">
-      <button class="tbtn" id="btnMidi" aria-expanded="false" aria-controls="midiPanel">MIDI設定</button>
+      <button class="tbtn" id="btnMidi" aria-expanded="false" aria-controls="midiPanel">MIDI</button>
       <div class="pop-panel" id="midiPanel" hidden>
-        <label>入力（GP-10 → PC）<select id="selIn"></select></label>
-        <label>出力（PC → GP-10）<select id="selOut"></select></label>
-        <label>Device ID（16進）<input id="inDev" value="10"></label>
-        <label>パッチ切り替えに使うMIDIチャンネル<select id="selCh"></select></label>
-        <p>ポートは「GP-10」を選びます（「GP-10 DAW CTRL」ではありません）。</p>
+        <label>Input (GP-10 → computer)<select id="selIn"></select></label>
+        <label>Output (computer → GP-10)<select id="selOut"></select></label>
+        <label>Device ID (hex)<input id="inDev" value="10"></label>
+        <label>Channel for program changes<select id="selCh"></select></label>
+        <p>Pick the port named “GP-10”, not “GP-10 DAW CTRL”.</p>
       </div>
     </div>
-    <button class="tbtn primary" id="btnConnect">接続</button>
+    <button class="tbtn primary" id="btnConnect">Connect</button>
   </header>
 
   <div class="body">
-    <aside class="patches" id="patches" aria-label="パッチ一覧">
-      <div class="patches-head"><h2>パッチ</h2><button class="tbtn" id="btnNames" disabled>名前を読む</button></div>
-      <input class="search" id="patchSearch" type="search" placeholder="名前で絞り込む" aria-label="パッチを名前で絞り込む">
-      <ul class="plist" id="patchList"><li class="hint">接続すると、ここに99パッチが並びます。クリックで本体のパッチを切り替えます。</li></ul>
+    <aside class="patches" id="patches" aria-label="Patches">
+      <div class="patches-head"><h2>Patches</h2><button class="tbtn" id="btnNames" disabled>Load names</button></div>
+      <input class="search" id="patchSearch" type="search" placeholder="Filter by name or number" aria-label="Filter patches">
+      <ul class="plist" id="patchList"><li class="hint">Connect to list the 99 user patches. Select one to switch the GP-10 to it.</li></ul>
     </aside>
 
     <main class="work">
       <section class="welcome" id="welcome">
         <div class="box">
-          <svg class="knobdeco" viewBox="0 0 64 64" aria-hidden="true"><path d="M 13.4 50.6 A 26 26 0 1 1 50.6 50.6" fill="none" stroke="#17181a" stroke-width="5" stroke-linecap="round"/><path d="M 13.4 50.6 A 26 26 0 0 1 45 9.5" fill="none" stroke="#e2a72e" stroke-width="5" stroke-linecap="round"/><circle cx="32" cy="32" r="19" fill="#17181a"/><circle cx="32" cy="32" r="18" fill="none" stroke="#2f3135" stroke-width="2"/><line x1="32" y1="32" x2="40.6" y2="16.8" stroke="#e8e4da" stroke-width="3" stroke-linecap="round"/></svg>
-          <h1>GP-10をつないでください</h1>
-          <p>USBでつないだGP-10の現在のパッチを、ここで直接編集できます。ChromeかEdgeで開き、右上の「接続」を押して、MIDIデバイスの使用を許可してください。GP-10のドライバが必要です。</p>
+          <div class="demo" aria-hidden="true">
+            <div style="--c:var(--c-amp);--w:64%"><span>Gain</span><b>77</b><i></i></div>
+            <div style="--c:var(--c-delay);--w:42%"><span>Feedback</span><b>42</b><i></i></div>
+            <div style="--c:var(--c-reverb);--w:30%"><span>Time</span><b>3.0<small style="font-size:15px;color:var(--muted)"> s</small></b><i></i></div>
+          </div>
+          <h1>Connect your GP-10</h1>
+          <p>Edit the current patch of a BOSS GP-10 connected over USB. Open this page in Chrome or Edge, press Connect, and allow access to MIDI devices. The GP-10 USB driver needs to be installed.</p>
           <p id="envNotice" class="err" hidden></p>
-          <button class="tbtn primary" id="btnConnect2">GP-10に接続</button>
+          <div class="actions"><button class="tbtn primary" id="btnConnect2">Connect GP-10</button></div>
         </div>
       </section>
 
-      <section class="railwrap" id="railwrap" hidden aria-label="信号経路">
+      <section class="railwrap" id="railwrap" hidden aria-label="Signal chain">
         <div class="rail" id="rail"></div>
-        <div class="railnote">ブロックをクリックで編集、ダブルクリックか右上のボタンでON/OFF、ドラッグで並べ替え。</div>
+        <div class="railnote">Select a block to edit it. Double-click or use its power button to switch it on or off. Drag to reorder.</div>
       </section>
       <section class="inspector" id="inspector" hidden>
         <div class="insp-main">
           <div class="insp-head">
             <div class="insp-title"><span class="bar"></span><h2 id="inspTitle"></h2><span class="model" id="inspModel"></span></div>
             <span id="inspPower"></span>
-            <nav class="views" id="views" aria-label="パッチ全体の設定"></nav>
+            <span class="move" id="inspMove"></span>
+            <nav class="views" id="views" aria-label="Patch settings"></nav>
           </div>
           <div class="ctls" id="ctls"></div>
         </div>
-        <aside class="browser" id="browser" aria-label="モデル"></aside>
+        <aside class="browser" id="browser" aria-label="Models"></aside>
       </section>
     </main>
   </div>
 
   <footer class="status">
-    <span><span class="dot" id="dot"></span><span id="statusText">未接続</span></span>
+    <span class="st"><span class="dot" id="dot"></span><span id="statusText">Not connected</span></span>
     <span class="last" id="lastAction"></span>
     <span id="pendingInfo"></span>
-    <button id="btnLog" aria-expanded="false" aria-controls="drawer">通信ログ</button>
+    <button id="btnLog" aria-expanded="false" aria-controls="drawer">MIDI log</button>
   </footer>
   <div class="drawer" id="drawer" hidden>
-    <header><strong>通信ログ</strong><span id="logCount"></span><span class="spacer"></span><button class="tbtn" id="btnLogClear">消去</button><button class="tbtn" id="btnLogClose">閉じる</button></header>
+    <header><strong>MIDI log</strong><span id="logCount"></span><span class="spacer"></span><button class="tbtn" id="btnLogClear">Clear</button><button class="tbtn" id="btnLogClose">Close</button></header>
     <pre id="log"></pre>
   </div>
+</div>
+<div class="scrim" id="scrim" hidden></div>
+<div class="picker" id="picker" hidden role="dialog" aria-modal="true" aria-labelledby="pickerTitle">
+  <header><strong id="pickerTitle"></strong><span class="spacer"></span><button class="tbtn" id="pickerClose">Close</button></header>
+  <div class="opts" id="pickerOpts"></div>
 </div>
 
 <script>
@@ -313,6 +367,7 @@ button { cursor: pointer; }
   const i2a = (n, len = 4) => { const o = []; for (let i = 0; i < len; i++) { o.unshift(n & 0x7F); n >>>= 7; } return o; };
   const checksum = (b) => (128 - (b.reduce((s, x) => s + x, 0) % 128)) % 128;
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const store = {
     get(k, d) { try { const v = localStorage.getItem('gp10ed.' + k); return v === null ? d : v; } catch { return d; } },
     set(k, v) { try { localStorage.setItem('gp10ed.' + k, v); } catch { /* ignore */ } },
@@ -338,7 +393,9 @@ button { cursor: pointer; }
     return { name: b.n, short: b.n.replace(/^Patch /, ''), base, len: b.len, params };
   });
   const B = Object.fromEntries(BLOCKS.map((b) => [b.short, b]));
+  const BY_ABS = new Map(BLOCKS.flatMap((b) => b.params).map((p) => [p.abs, p]));
   const P = (blk, name) => (B[blk] ? B[blk].params.find((p) => p.name === name) : null);
+  const findP = (blk, re) => (B[blk] ? B[blk].params.find((p) => re.test(p.name)) : null);
   const TEMP_BASE = a2i(TEMP);
   const SPAN = a2i([0x00, 0x04, 0x00, 0x00]);
   const userBase = (p) => TEMP_BASE + SPAN * p;
@@ -347,7 +404,7 @@ button { cursor: pointer; }
     access: null, input: null, output: null, mem: new Map(), loaded: false,
     view: store.get('view', 'AMP'), names: new Array(100).fill(null), cur: null,
     collector: null, waiters: [], queue: Promise.resolve(), pending: new Map(), flushTimer: null,
-    touched: new Map(), updaters: [], syncTimer: null, drag: null,
+    touched: new Map(), updaters: [], syncTimer: null, drag: null, railRaf: 0, picker: null,
   };
 
   function getVal(p, mem = S.mem) {
@@ -356,28 +413,31 @@ button { cursor: pointer; }
     for (let i = 0; i < p.size; i++) { const v = mem.get(p.abs + i); if (v === undefined) return undefined; bytes.push(v); }
     return p.size === 1 ? bytes[0] : bytes.reduce((v, x) => (v << 4) | (x & 0x0F), 0);
   }
+  const frac = (p) => { const v = getVal(p); return !p || v === undefined ? 0 : (v - p.min) / Math.max(1, p.max - p.min); };
   const encode = (p, v) => { if (p.size === 1) return [v & 0x7F]; const o = []; for (let i = p.size - 1; i >= 0; i--) o.push((v >> (4 * i)) & 0x0F); return o; };
   const optsOf = (p) => (p && p.view[0] === 'l' ? OPTS[p.view[1]] : null);
   const listText = (p) => { const v = getVal(p); const o = optsOf(p); return v === undefined || !o ? null : o[v - p.min]; };
-  function display(p, v) {
-    if (v === undefined) return '—';
+  // value as [number-ish text, unit]
+  function parts(p, v) {
+    if (v === undefined) return ['—', ''];
     const [k, a, b, unit] = p.view;
-    if (k === 'l') { const o = OPTS[a]; return o && o[v - p.min] !== undefined ? o[v - p.min] : String(v); }
+    if (k === 'l') { const o = OPTS[a]; return [o && o[v - p.min] !== undefined ? o[v - p.min] : String(v), '']; }
     if (k === 'r') {
       const x = a + (v - p.min) * b;
       const dec = Number.isInteger(b) ? 0 : (String(b).split('.')[1] || '').length;
-      const s = (a < 0 && x > 0 ? '+' : '') + x.toFixed(dec);
-      return unit && unit !== 'ASCII' ? `${s}${unit === '%' ? '' : ' '}${unit}` : s;
+      return [(a < 0 && x > 0 ? '+' : '') + x.toFixed(dec), unit && unit !== 'ASCII' ? unit : ''];
     }
-    if (k === 'pan') { const d = (v - 50) * 2; return d === 0 ? 'C' : d < 0 ? `L${-d}` : `R${d}`; }
-    if (k === 'bal') return v <= 50 ? `M${v * 2}:100N` : `M100:${(100 - v) * 2}N`;
-    return String(v);
+    if (k === 'pan') { const d = (v - 50) * 2; return [d === 0 ? 'C' : d < 0 ? `L${-d}` : `R${d}`, '']; }
+    if (k === 'bal') return [v <= 50 ? `M${v * 2}:100N` : `M100:${(100 - v) * 2}N`, ''];
+    return [String(v), ''];
   }
+  const display = (p, v) => { const [t, u] = parts(p, v); return u ? `${t} ${u}` : t; };
   function parseDisplay(p, text) {
     const t = String(text).trim();
     const [k, a, b] = p.view;
     if (k === 'r') { const x = parseFloat(t.replace(/[^\d.+-]/g, '')); if (!Number.isFinite(x)) return null; return Math.round(p.min + (x - a) / b); }
-    if (k === 'l') { const o = OPTS[a]; const i = o.findIndex((s) => s.toUpperCase() === t.toUpperCase()); if (i >= 0) return p.min + i; const n = parseInt(t, 10); return Number.isFinite(n) ? n : null; }
+    if (k === 'l') { const o = OPTS[a]; const i = o.findIndex((s) => s.toUpperCase() === t.toUpperCase()); if (i >= 0) return p.min + i; const n = parseInt(t, 10); if (!Number.isFinite(n)) return null; const j = o.indexOf(String(n)); return j >= 0 ? p.min + j : null; }
+    if (k === 'pan') { const m = t.toUpperCase().match(/^([LR])?\s*(\d+)?$/); if (t.toUpperCase().startsWith('C')) return 50; if (!m) return null; const n = +(m[2] || 0); return clamp(50 + (m[1] === 'L' ? -n : n) / 2, 0, 100); }
     const n = parseInt(t, 10); return Number.isFinite(n) ? n : null;
   }
 
@@ -405,37 +465,99 @@ button { cursor: pointer; }
     'TREMOLO': 'FX/Tremolo', 'PAN': 'FX/Auto Pan', 'ROTARY': 'FX/Rotary', 'UNI-V': 'FX/Uni-V', 'CHORUS': 'FX/Chorus', 'DELAY': 'FX/Delay',
   };
   const fxBlock = () => FX_BLOCK[listText(P('FX', 'Fx Select'))];
-  const tc = (s) => s; // keep BOSS model names as printed on the unit
+  const subTypeText = () => { const b = modelBlock(); return listText(P(b, SUBTYPE[b])); };
 
   const V = {
     MODELING: { title: 'Modeling', ab: 'MODEL', cat: '--c-model', power: ['Modeling', 'Modeling Tone Switch'],
       model: () => [listText(P('Modeling', 'Modeling Type')), subTypeText()].filter(Boolean).join('  '),
-      browse: () => [['楽器', P('Modeling', 'Modeling Type')], ['モデル', P(modelBlock(), SUBTYPE[modelBlock()])]],
+      browse: () => [['Instrument', P('Modeling', 'Modeling Type')], ['Model', P(modelBlock(), SUBTYPE[modelBlock()])]],
       params: () => [...B.Modeling.params.filter((p) => !['Modeling Tone Switch', 'Modeling Type'].includes(p.name)), ...visible(B[modelBlock()]).filter((p) => p.name !== SUBTYPE[modelBlock()])] },
-    NORMAL: { title: 'Normal PU', ab: 'NORMAL', cat: '--c-normal', power: ['Common', 'Normal Pickup Switch'], model: () => 'ノーマル・ピックアップ',
+    NORMAL: { title: 'Normal PU', ab: 'NORMAL', cat: '--c-normal', power: ['Common', 'Normal Pickup Switch'], model: () => 'Normal pickup',
       params: () => ['Normal Pickup Level', 'Normal Pickup Cable Simulation'].map((n) => P('Common', n)) },
-    MIXER: { title: 'Mixer', ab: 'MIXER', cat: '--c-patch', model: () => 'モデリングとノーマルPUのバランス',
+    MIXER: { title: 'Mixer', ab: 'MIXER', cat: '--c-patch', model: () => 'Modeling and normal pickup balance',
       params: () => ['Mixer Modeling Input Level', 'Mixer Normal PU Input Level', 'Mixer Balance'].map((n) => P('Common', n)) },
-    AMP: { title: 'Amp', ab: 'AMP', cat: '--c-amp', power: ['Amp', 'Amp Switch'], typeP: ['Amp', 'Amp Type'] },
-    FX: { title: 'FX', ab: 'FX', cat: '--c-fx', power: ['FX', 'Fx Switch'], typeP: ['FX', 'Fx Select'],
+    AMP: { title: 'Amp', ab: 'AMP', cat: '--c-amp', power: ['Amp', 'Amp Switch'], typeP: ['Amp', 'Amp Type'], chain: 'AMP' },
+    FX: { title: 'FX', ab: 'FX', cat: '--c-fx', power: ['FX', 'Fx Switch'], typeP: ['FX', 'Fx Select'], chain: 'FX',
       params: () => (fxBlock() && B[fxBlock()] ? B[fxBlock()].params : []) },
-    WAH: { title: 'Wah', ab: 'WAH', cat: '--c-wah', power: ['Wah', 'Wah Switch'], typeP: ['Wah', 'Wah Type'] },
-    CHORUS: { title: 'Chorus', ab: 'CHORUS', cat: '--c-chorus', power: ['Chorus', 'Chorus Switch'], typeP: ['Chorus', 'Chorus Mode'] },
-    DELAY: { title: 'Delay', ab: 'DELAY', cat: '--c-delay', power: ['Delay', 'Delay Switch'], typeP: ['Delay', 'Delay Type'] },
-    REVERB: { title: 'Reverb', ab: 'REVERB', cat: '--c-reverb', power: ['Reverb', 'Reverb Switch'], typeP: ['Reverb', 'Reverb Type'] },
-    EQ: { title: 'Equalizer', ab: 'EQ', cat: '--c-eq', power: ['Equalizer', 'EQ Switch'], block: 'Equalizer', model: () => '4バンドEQ' },
-    NS: { title: 'Noise Suppressor', ab: 'NS', cat: '--c-ns', power: ['NS', 'NS Switch'], block: 'NS', model: () => 'ノイズ・サプレッサー' },
-    FV: { title: 'Foot Volume', ab: 'FV', cat: '--c-fv', block: 'Foot Volume', model: () => 'フット・ボリューム' },
-    PATCH: { title: 'パッチ', cat: '--c-patch', util: true, params: () => ['Patch Level', 'Patch Tempo', 'Patch GK Set Select'].map((n) => P('Common', n)) },
-    TUNE: { title: 'チューニング', cat: '--c-patch', util: true, block: 'TUNE',
-      sections: [[/^Alternate Tuning /, 'オルタネート・チューニング'], [/^12-String (Tuning )?/, '12弦'], [/^String Bend /, 'ストリング・ベンド']] },
-    CTL: { title: 'コントローラー', cat: '--c-patch', util: true, block: 'Controller Function' },
-    ASSIGN: { title: 'アサイン', cat: '--c-patch', util: true, block: 'Controller Assign', byNumber: true },
+    WAH: { title: 'Wah', ab: 'WAH', cat: '--c-wah', power: ['Wah', 'Wah Switch'], typeP: ['Wah', 'Wah Type'], chain: 'WAH' },
+    CHORUS: { title: 'Chorus', ab: 'CHORUS', cat: '--c-chorus', power: ['Chorus', 'Chorus Switch'], typeP: ['Chorus', 'Chorus Mode'], chain: 'CHORUS' },
+    DELAY: { title: 'Delay', ab: 'DELAY', cat: '--c-delay', power: ['Delay', 'Delay Switch'], typeP: ['Delay', 'Delay Type'], chain: 'DELAY' },
+    REVERB: { title: 'Reverb', ab: 'REVERB', cat: '--c-reverb', power: ['Reverb', 'Reverb Switch'], typeP: ['Reverb', 'Reverb Type'], chain: 'REVERB' },
+    EQ: { title: 'Equalizer', ab: 'EQ', cat: '--c-eq', power: ['Equalizer', 'EQ Switch'], block: 'Equalizer', model: () => '4-band parametric EQ', chain: 'EQ' },
+    NS: { title: 'Noise Suppressor', ab: 'NS', cat: '--c-ns', power: ['NS', 'NS Switch'], block: 'NS', model: () => '', chain: 'NS' },
+    FV: { title: 'Foot Volume', ab: 'FV', cat: '--c-fv', block: 'Foot Volume', model: () => '', chain: 'FV' },
+    PATCH: { title: 'Patch', cat: '--c-patch', util: true, params: () => ['Patch Level', 'Patch Tempo', 'Patch GK Set Select'].map((n) => P('Common', n)) },
+    TUNE: { title: 'Tuning', cat: '--c-patch', util: true, block: 'TUNE',
+      sections: [[/^Alternate Tuning /, 'Alternate tuning'], [/^12-String (Tuning )?/, '12-string'], [/^String Bend /, 'String bend']] },
+    CTL: { title: 'Controllers', cat: '--c-patch', util: true, block: 'Controller Function' },
+    ASSIGN: { title: 'Assigns', cat: '--c-patch', util: true, block: 'Controller Assign', byNumber: true },
   };
   const BLOCK_OF = { AMP: 'Amp', FX: 'FX', WAH: 'Wah', CHORUS: 'Chorus', DELAY: 'Delay', REVERB: 'Reverb' };
-  function subTypeText() { const b = modelBlock(); return listText(P(b, SUBTYPE[b])); }
   function viewModel(key) { const v = V[key]; if (v.model) return v.model(); if (v.typeP) return listText(P(...v.typeP)); return ''; }
-  // short status line under each tile on the signal rail
+  function viewParams(key) {
+    const v = V[key];
+    if (v.params) return v.params().filter(Boolean);
+    const blk = B[v.block || BLOCK_OF[key]];
+    const skip = new Set([v.power && v.power[1], v.typeP && v.typeP[1]]);
+    return blk.params.filter((p) => !skip.has(p.name));
+  }
+  function viewBrowse(key) {
+    const v = V[key];
+    if (v.browse) return v.browse().filter(([, p]) => p);
+    if (v.typeP) return [[{ Amp: 'Amp type', FX: 'Effect', Wah: 'Wah type', Chorus: 'Mode', Delay: 'Delay type', Reverb: 'Reverb type' }[v.typeP[0]], P(...v.typeP)]];
+    return [];
+  }
+  const isOn = (key) => { const v = V[key]; if (!v.power) return null; return getVal(P(...v.power)) === 1; };
+
+  // ---------- block pictures, drawn from the parameters ----------
+  const fmt = (n) => n.toFixed(1);
+  const pathOf = (pts) => 'M' + pts.map(([x, y]) => `${fmt(x)} ${fmt(y)}`).join(' L');
+  const stroke = (d, extra = '') => `<path d="${d}" fill="none" stroke="var(--cat)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" ${extra}/>`;
+  const base = '<line x1="0" y1="22" x2="66" y2="22" stroke="#45484e" stroke-width="1"/>';
+  function waveSine(cycles, amp, y0 = 11) { const pts = []; for (let i = 0; i <= 60; i++) { const t = i / 60; pts.push([1 + t * 64, y0 - Math.sin(t * Math.PI * 2 * cycles) * amp]); } return stroke(pathOf(pts)); }
+  function waveClip(g) { const k = 1 + g * 10; const pts = []; for (let i = 0; i <= 60; i++) { const t = i / 60; const s = Math.sin(t * Math.PI * 4); pts.push([1 + t * 64, 11 - (Math.tanh(k * s) / Math.tanh(k)) * 8]); } return stroke(pathOf(pts)); }
+  function echoes(time, fb) { let out = base; let x = 3; let h = 19; const gap = 5 + time * 16; for (let i = 0; i < 12 && x < 65 && h > 1; i++) { out += `<rect x="${fmt(x)}" y="${fmt(22 - h)}" width="2.4" height="${fmt(h)}" rx="1" fill="var(--cat)"/>`; x += gap; h *= 0.3 + fb * 0.62; } return out; }
+  function tail(len, pre) { const x0 = 2 + pre * 14; const L = 12 + len * 50; const pts = [[x0, 22], [x0 + 2, 4]]; for (let i = 1; i <= 30; i++) { const t = i / 30; pts.push([x0 + 2 + t * L, 22 - 18 * Math.exp(-t * 3.2)]); } pts.push([Math.min(66, x0 + 2 + L), 22]); const d = pathOf(pts.filter(([x]) => x <= 66)); return `${base}<path d="${d} Z" fill="var(--cat)" fill-opacity=".22"/>${stroke(d)}`; }
+  function peak(pos, q = 0.5) { const c = 4 + pos * 58; const w = 4 + (1 - q) * 9; const pts = []; for (let i = 0; i <= 60; i++) { const x = 1 + i / 60 * 64; pts.push([x, 19 - 15 * Math.exp(-((x - c) ** 2) / (2 * w * w))]); } return base + stroke(pathOf(pts)); }
+  function eqCurve(gains) { const centers = [8, 24, 42, 58]; const pts = []; for (let i = 0; i <= 60; i++) { const x = 1 + i / 60 * 64; let y = 0; gains.forEach((g, j) => { y += g * Math.exp(-((x - centers[j]) ** 2) / 90); }); pts.push([x, 11 - y * 9]); } return '<line x1="0" y1="11" x2="66" y2="11" stroke="#45484e" stroke-width="1" stroke-dasharray="2 3"/>' + stroke(pathOf(pts)); }
+  function knee(thr, ratio) { const t = 6 + (1 - thr) * 40; const pts = [[1, 22], [t, 22 - (t - 1) * 0.34]]; const yT = pts[1][1]; pts.push([65, yT - (65 - t) * 0.34 * (1 - ratio * 0.85)]); return base + stroke(pathOf(pts)); }
+  function bars(vals) { const n = vals.length; const w = 64 / n; return vals.map((v, i) => `<rect x="${fmt(1 + i * w + w * 0.18)}" y="${fmt(22 - Math.max(1.5, v * 20))}" width="${fmt(w * 0.64)}" height="${fmt(Math.max(1.5, v * 20))}" rx="1" fill="var(--cat)"/>`).join(''); }
+  function level(v) { const n = 12; let out = ''; for (let i = 0; i < n; i++) out += `<rect x="${fmt(1 + i * 5.4)}" y="8" width="4.2" height="8" rx="1" fill="${i < Math.round(v * n) ? 'var(--cat)' : '#3b3e44'}"/>`; return out; }
+  function gate(thr) { let pts = []; for (let i = 0; i <= 64; i++) { const x = 1 + i; const n = Math.sin(i * 1.7) * Math.sin(i * 0.37 + 1) * 3.2; pts.push([x, 16 + n]); } const y = 20 - thr * 16; return stroke(pathOf(pts), 'stroke-opacity=".55"') + `<line x1="0" y1="${fmt(y)}" x2="66" y2="${fmt(y)}" stroke="var(--cat)" stroke-width="1.6" stroke-dasharray="3 2"/>`; }
+  function fxPicture() {
+    const blk = fxBlock(); if (!blk) return waveSine(2, 6);
+    const r = findP(blk, /Rate/), d = findP(blk, /Depth/);
+    switch (listText(P('FX', 'Fx Select'))) {
+      case 'OD/DS': return waveClip(frac(findP(blk, /Drive/)));
+      case 'COMPRESSOR': return knee(frac(findP(blk, /Sustain/)), 0.8);
+      case 'LIMITER': return knee(1 - frac(findP(blk, /Threshold/)), frac(findP(blk, /Ratio|Ration/)));
+      case 'EQ': return eqCurve(['EQ Low Gain', 'EQ Low-Mid Gain', 'EQ High-Mid Gain', 'EQ High Gain'].map((n) => frac(P(blk, n)) * 2 - 1));
+      case 'DELAY': return echoes(frac(findP(blk, /Time/)), frac(findP(blk, /Feedback/)));
+      case 'T.WAH': return peak(frac(findP(blk, /Freq/)), frac(findP(blk, /Peak/)));
+      case 'PITCH SHIFTER': case 'HARMONIST': case 'PEDAL BEND': {
+        const p = findP(blk, /Pitch1|Pitch Depth|Pitch/); const y = 11 - (frac(p) - 0.5) * 16;
+        return `<line x1="1" y1="11" x2="30" y2="11" stroke="#6d7178" stroke-width="1.6" stroke-linecap="round"/>${stroke(`M30 11 L36 ${fmt(y)} L65 ${fmt(y)}`)}`;
+      }
+      default: return waveSine(1 + frac(r) * 5, 2 + frac(d) * 7);
+    }
+  }
+  function picture(key) {
+    const f = (blk, n) => frac(P(blk, n));
+    switch (key) {
+      case 'MODELING': return bars([1, 2, 3, 4, 5, 6].map((i) => f('Modeling', `String Level ${i}`)));
+      case 'NORMAL': return level(f('Common', 'Normal Pickup Level'));
+      case 'AMP': return waveClip(f('Amp', 'Amp Gain'));
+      case 'FX': return fxPicture();
+      case 'WAH': return peak(f('Wah', 'Wah Pedal Position'), 0.6);
+      case 'CHORUS': return waveSine(1 + f('Chorus', 'Chorus Rate') * 5, 2 + f('Chorus', 'Chorus Depth') * 7);
+      case 'DELAY': return echoes(f('Delay', 'Delay Time'), f('Delay', 'Delay Feedback'));
+      case 'REVERB': return tail(f('Reverb', 'Reverb Time'), f('Reverb', 'Reverb Pre Delay'));
+      case 'EQ': return eqCurve(['EQ Low Gain', 'EQ Low-Mid Gain', 'EQ High-Mid Gain', 'EQ High Gain'].map((n) => f('Equalizer', n) * 2 - 1));
+      case 'NS': return gate(f('NS', 'NS Threshold'));
+      case 'FV': return level(f('Foot Volume', 'Foot Volume Level'));
+      default: return '';
+    }
+  }
   function tileText(key) {
     const val = (blk, n) => { const p = P(blk, n); return p ? display(p, getVal(p)) : ''; };
     switch (key) {
@@ -447,20 +569,6 @@ button { cursor: pointer; }
       default: return viewModel(key) || '';
     }
   }
-  function viewParams(key) {
-    const v = V[key];
-    if (v.params) return v.params().filter(Boolean);
-    const blk = B[v.block || BLOCK_OF[key]];
-    const skip = new Set([v.power && v.power[1], v.typeP && v.typeP[1]]);
-    return blk.params.filter((p) => !skip.has(p.name));
-  }
-  function viewBrowse(key) {
-    const v = V[key];
-    if (v.browse) return v.browse().filter(([, p]) => p);
-    if (v.typeP) return [[{ Amp: 'アンプ', FX: 'エフェクト', Wah: 'ワウ', Chorus: 'モード', Delay: 'タイプ', Reverb: 'タイプ' }[v.typeP[0]], P(...v.typeP)]];
-    return [];
-  }
-  const isOn = (key) => { const v = V[key]; if (!v.power) return null; return getVal(P(...v.power)) === 1; };
 
   // ---------- grouping & labels ----------
   function commonPrefix(names) {
@@ -475,13 +583,13 @@ button { cursor: pointer; }
     }
     return best;
   }
-  function groups(params, byNumber, sections) {
-    if (sections) {
-      const out = sections.map(([, title]) => ({ title, items: [] }));
+  function groups(params, view) {
+    if (view.sections) {
+      const out = view.sections.map(([, title]) => ({ title, items: [] }));
       const rest = { title: '', items: [] };
       for (const p of params) {
-        const i = sections.findIndex(([re]) => re.test(p.name));
-        if (i >= 0) out[i].items.push({ p, label: p.name.replace(sections[i][0], '') || p.name }); else rest.items.push({ p, label: p.name });
+        const i = view.sections.findIndex(([re]) => re.test(p.name));
+        if (i >= 0) out[i].items.push({ p, label: p.name.replace(view.sections[i][0], '') || p.name }); else rest.items.push({ p, label: p.name });
       }
       return [...out, rest].filter((g) => g.items.length);
     }
@@ -489,7 +597,7 @@ button { cursor: pointer; }
     const label = (p) => (pre && p.name.startsWith(pre) && p.name.length > pre.length ? p.name.slice(pre.length) : p.name);
     const out = []; const idx = new Map();
     const add = (key, p, lab) => { if (!idx.has(key)) { idx.set(key, out.length); out.push({ title: key, items: [] }); } out[idx.get(key)].items.push({ p, label: lab }); };
-    if (byNumber) {
+    if (view.byNumber) {
       for (const p of params) { const m = label(p).match(/^(.*?)\s*(\d+)$/); if (m) add(`${pre.trim() || 'Assign'} ${m[2]}`, p, m[1].replace(/\s{2,}/g, ' ').trim()); else add('', p, label(p)); }
       return out;
     }
@@ -508,11 +616,11 @@ button { cursor: pointer; }
     logLines.push(`${new Date().toTimeString().slice(0, 8)}  ${msg}`);
     if (logLines.length > 400) logLines.shift();
     if (!$('drawer').hidden) { $('log').textContent = logLines.join('\n'); $('log').scrollTop = $('log').scrollHeight; }
-    $('logCount').textContent = `${logLines.length}件`;
+    $('logCount').textContent = `${logLines.length} lines`;
   }
   function setStatus(text, kind) { $('statusText').textContent = text; $('dot').className = 'dot ' + (kind || ''); }
   const last = (t) => { $('lastAction').textContent = t; };
-  function send(bytes, note) { if (!S.output) throw new Error('出力ポートがありません'); S.output.send(bytes); if (note) log('→ ' + note); }
+  function send(bytes, note) { if (!S.output) throw new Error('No MIDI output is selected'); S.output.send(bytes); if (note) log('→ ' + note); }
   function onMessage(e) {
     const b = Array.from(e.data);
     if (b[0] === 0xF8 || b[0] === 0xFE) return;
@@ -522,16 +630,16 @@ button { cursor: pointer; }
         if (S.collector) S.collector.push(r);
         for (const w of S.waiters.slice()) if (w.match(r)) { S.waiters.splice(S.waiters.indexOf(w), 1); w.resolve(r); }
         if (!S.collector) { applyPacket(r); refresh(); }
-      } else if (r && r.bad) log('← チェックサムが合わないDT1を受信しました');
+      } else if (r && r.bad) log('← Received a DT1 with a bad checksum');
       return;
     }
     if ((b[0] & 0xF0) === 0xC0) {
-      log(`← 本体でパッチ${String(b[1] + 1).padStart(2, '0')}に切り替え`);
+      log(`← GP-10 switched to patch ${String(b[1] + 1).padStart(2, '0')}`);
       clearTimeout(S.pcTimer);
       S.pcTimer = setTimeout(() => enqueue(async () => { await readCurrentNo(); await readTemp(); }), 120);
     }
   }
-  function enqueue(fn) { const run = S.queue.then(fn, fn); S.queue = run.catch((e) => log('エラー: ' + e.message)); return run; }
+  function enqueue(fn) { const run = S.queue.then(fn, fn); S.queue = run.catch((e) => log('Error: ' + e.message)); return run; }
   function waitDT1(match, ms) {
     return new Promise((resolve) => {
       const w = { match, resolve }; S.waiters.push(w);
@@ -548,25 +656,26 @@ button { cursor: pointer; }
     });
   }
   function applyPacket(r) {
-    const base = a2i(r.addr);
-    if (base < TEMP_BASE || base >= TEMP_BASE + SPAN) return;
-    r.data.forEach((v, i) => S.mem.set(base + i, v));
+    const base0 = a2i(r.addr);
+    if (base0 < TEMP_BASE || base0 >= TEMP_BASE + SPAN) return;
+    r.data.forEach((v, i) => S.mem.set(base0 + i, v));
   }
   const STRUCTURAL = [['Modeling', 'Modeling Type'], ['FX', 'Fx Select'], ['SYNTH', 'SYNTH Type'], ['Poly Fx', 'Poly Fx Type'], ['E.GTR', 'Type'], ['AC', 'Type'], ['E.BASS', 'Type']];
+  const STRUCT_ABS = new Set(STRUCTURAL.map(([b, n]) => P(b, n)).filter(Boolean).map((p) => p.abs));
   async function readTemp() {
-    setStatus('読み込み中…', 'busy');
+    setStatus('Reading patch…', 'busy');
     const before = S.loaded ? new Map(S.mem) : null;
     const packets = await collect(TEMP, SPAN);
-    if (!packets.length) { setStatus('GP-10から応答がありません', 'err'); log('← パッチの読み出しに応答がありません'); return false; }
+    if (!packets.length) { setStatus('No reply from the GP-10', 'err'); log('← No reply to the patch request'); return false; }
     for (const r of packets) applyPacket(r);
     const total = packets.reduce((a, r) => a + r.data.length, 0);
     const first = !S.loaded; S.loaded = true;
-    if (first) log(`← パッチを読み込みました（${packets.length}ブロック、${total}バイト）`);
+    if (first) log(`← Read the current patch (${packets.length} blocks, ${total} bytes)`);
     const changedChain = before && B['Effects Chain'].params.some((p) => getVal(p, before) !== getVal(p));
     const structural = !before || changedChain || STRUCTURAL.some(([b, n]) => getVal(P(b, n), before) !== getVal(P(b, n)));
     showEditor();
     if (structural) renderAll(); else refresh();
-    setStatus(`${S.output.name} に接続中`, 'ok');
+    setStatus(`Connected to ${S.output.name}`, 'ok');
     return true;
   }
   async function readCurrentNo() {
@@ -581,67 +690,74 @@ button { cursor: pointer; }
       const w = waitDT1((r) => a2i(r.addr) === userBase(p), 400);
       send(rq1(i2a(userBase(p)), 12));
       const r = await w;
-      S.names[p] = r ? String.fromCharCode(...r.data.slice(0, 12)).replace(/\s+$/, '') : '（応答なし）';
+      S.names[p] = r ? String.fromCharCode(...r.data.slice(0, 12)).replace(/\s+$/, '') : '(no reply)';
       if (p % 11 === 0 || p === 99) renderPatchList();
       await sleep(8);
     }
-    log('← 99パッチの名前を読み込みました');
-    $('btnNames').disabled = false; $('btnNames').textContent = '読み直す';
+    log('← Read the names of all 99 patches');
+    $('btnNames').disabled = false; $('btnNames').textContent = 'Reload names';
   }
   async function selectPatch(p) {
-    last(`パッチ${String(p).padStart(2, '0')}に切り替え中…`);
-    send(dt1([0, 0, 0, 0], [p - 1]), `パッチ${String(p).padStart(2, '0')}に切り替え`);
+    const no = String(p).padStart(2, '0');
+    last(`Switching to patch ${no}…`);
+    send(dt1([0, 0, 0, 0], [p - 1]), `Switch to patch ${no}`);
     await sleep(150);
     await readCurrentNo();
     if (S.cur !== p) {
       const ch = parseInt($('selCh').value, 10) || 0;
-      send([0xB0 | ch, 0x00, 0x00]); send([0xB0 | ch, 0x20, 0x00]); send([0xC0 | ch, p - 1], 'プログラムチェンジで再試行');
+      send([0xB0 | ch, 0x00, 0x00]); send([0xB0 | ch, 0x20, 0x00]); send([0xC0 | ch, p - 1], 'Retry with a program change');
       await sleep(200); await readCurrentNo();
     }
     await readTemp();
-    last(`パッチ${String(p).padStart(2, '0')}に切り替えました`);
+    last(`Switched to patch ${no}`);
   }
 
   // ---------- edits ----------
-  function setParam(p, v, silent) {
-    v = Math.max(p.min, Math.min(p.max, Math.round(v)));
-    if (getVal(p) === v) return;
+  function setParam(p, v) {
+    v = clamp(Math.round(v), p.min, p.max);
+    if (getVal(p) === v) return false;
     encode(p, v).forEach((x, i) => S.mem.set(p.abs + i, x));
     S.touched.set(p.abs, performance.now());
     S.pending.set(p.abs, p);
-    if (!silent) last(`${p.name} = ${display(p, v)}`);
+    last(`${p.name} = ${display(p, v)}`);
     if (!S.flushTimer) S.flushTimer = setTimeout(flush, 25);
-    $('pendingInfo').textContent = '送信中…';
+    $('pendingInfo').textContent = 'Sending…';
+    if (!S.railRaf) S.railRaf = requestAnimationFrame(() => { S.railRaf = 0; updateRail(); });
+    return true;
   }
   function flush() {
     S.flushTimer = null;
     for (const p of S.pending.values()) {
       const data = []; for (let i = 0; i < p.size; i++) data.push(S.mem.get(p.abs + i));
-      try { send(dt1(i2a(p.abs), data)); } catch (e) { log('送信できませんでした: ' + e.message); }
+      try { send(dt1(i2a(p.abs), data)); } catch (e) { log('Could not send: ' + e.message); }
     }
     if (S.pending.size === 1) { const p = S.pending.values().next().value; log(`→ ${p.name} = ${display(p, getVal(p))}`); }
-    else if (S.pending.size > 1) log(`→ ${S.pending.size}項目を送信`);
+    else if (S.pending.size > 1) log(`→ Sent ${S.pending.size} parameters`);
     S.pending.clear();
     $('pendingInfo').textContent = '';
   }
+  function chainOrder() { return B['Effects Chain'].params.map((p) => listText(p)); }
   function writeChain(order) {
     const chain = B['Effects Chain'];
     const opts = optsOf(chain.params[0]);
     const data = order.map((name) => opts.indexOf(name));
     if (data.some((x) => x < 0) || data.length !== chain.params.length) return;
     data.forEach((x, i) => S.mem.set(chain.base + i, x));
-    send(dt1(i2a(chain.base), data), 'エフェクトの順番を変更: ' + order.map((n) => (n === 'SPLIT_TO_MIXER' ? '◇' : n)).join(' › '));
-    last('エフェクトの順番を変更しました');
+    send(dt1(i2a(chain.base), data), 'Effect order: ' + order.map((n) => (n === 'SPLIT_TO_MIXER' ? '◇' : n)).join(' › '));
+    last('Changed the effect order');
+  }
+  function moveBlock(key, dir) {
+    const order = chainOrder(); const i = order.indexOf(V[key].chain); const j = i + dir;
+    if (i < 0 || j < 0 || j >= order.length) return;
+    [order[i], order[j]] = [order[j], order[i]];
+    writeChain(order); renderRail(); renderMove();
   }
 
   // ---------- rendering ----------
   const catColor = (key) => `var(${V[key].cat})`;
   function showEditor() { $('welcome').hidden = true; $('railwrap').hidden = false; $('inspector').hidden = false; ['btnReload', 'btnExport', 'btnImport'].forEach((id) => { $(id).disabled = false; }); $('patchName').disabled = false; }
   function renderAll() { renderHead(); renderRail(); renderInspector(); }
-  function refresh() {
-    for (const u of S.updaters) u();
-    renderHead(); updateRail(); updatePower(); updateTitle(); updateBrowser();
-  }
+  function refresh() { for (const u of S.updaters) u(); renderHead(); updateRail(); updatePower(); updateTitle(); updateBrowser(); }
   function renderHead() {
     $('patchNo').textContent = S.cur ? String(S.cur).padStart(2, '0') : '--';
     if (document.activeElement !== $('patchName') && S.loaded) {
@@ -650,17 +766,16 @@ button { cursor: pointer; }
     }
   }
   const POWER_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M4.4 3.8a5.5 5.5 0 1 0 7.2 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>';
-  function chainOrder() { return B['Effects Chain'].params.map((p) => listText(p)); }
-  function makeTile(key, opts = {}) {
+  function makeTile(key, chainIndex) {
     const v = V[key];
     const el = document.createElement('div');
     el.className = 'tile'; el.tabIndex = 0; el.setAttribute('role', 'button'); el.dataset.view = key;
     el.style.setProperty('--cat', catColor(key));
-    el.innerHTML = '<span class="ab"></span><span class="md"></span>';
+    el.innerHTML = '<span class="ab"></span><span class="gr"></span><span class="md"></span>';
     el.querySelector('.ab').textContent = v.ab;
     if (v.power) {
       const pw = document.createElement('button'); pw.className = 'pw'; pw.innerHTML = POWER_SVG; pw.type = 'button';
-      pw.setAttribute('aria-label', `${v.title}のON/OFF`);
+      pw.setAttribute('aria-label', `Switch ${v.title} on or off`);
       pw.addEventListener('click', (e) => { e.stopPropagation(); togglePower(key); });
       pw.addEventListener('dblclick', (e) => e.stopPropagation());
       el.appendChild(pw);
@@ -670,9 +785,9 @@ button { cursor: pointer; }
     el.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') select(key);
       else if (e.key === ' ') { e.preventDefault(); togglePower(key); }
-      else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { moveFocus(el, e.key === 'ArrowRight' ? 1 : -1); e.preventDefault(); }
+      else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { const ts = Array.from($('rail').querySelectorAll('.tile')); const t = ts[ts.indexOf(el) + (e.key === 'ArrowRight' ? 1 : -1)]; if (t) t.focus(); e.preventDefault(); }
     });
-    if (opts.chainIndex !== undefined) makeDraggable(el, opts.chainIndex);
+    if (chainIndex !== undefined) makeDraggable(el, chainIndex);
     return el;
   }
   function makeNode(kind, chainIndex) {
@@ -680,7 +795,7 @@ button { cursor: pointer; }
     el.className = 'node' + (kind === 'MIXER' ? ' mixer' : '');
     el.innerHTML = '<i></i><span></span>';
     el.querySelector('span').textContent = kind === 'MIXER' ? 'mixer' : 'split';
-    el.title = kind === 'MIXER' ? 'MIXER：モデリング音とノーマルPUが合流する位置（クリックでバランスを編集）' : 'SPLIT：経路が分岐する位置';
+    el.title = kind === 'MIXER' ? 'Mixer: where the modeling and normal pickup paths meet. Select to edit the balance.' : 'Split: where the signal path splits';
     if (kind === 'MIXER') { el.dataset.view = 'MIXER'; el.addEventListener('click', () => select('MIXER')); }
     makeDraggable(el, chainIndex);
     return el;
@@ -696,12 +811,8 @@ button { cursor: pointer; }
       const from = S.drag; if (from === null || from === index) return;
       const order = chainOrder(); const [item] = order.splice(from, 1);
       order.splice(from < index ? index - 1 : index, 0, item);
-      writeChain(order); renderRail();
+      writeChain(order); renderRail(); renderMove();
     });
-  }
-  function moveFocus(el, dir) {
-    const tiles = Array.from($('rail').querySelectorAll('.tile'));
-    const i = tiles.indexOf(el); const t = tiles[i + dir]; if (t) t.focus();
   }
   function renderRail() {
     const rail = $('rail'); rail.innerHTML = '';
@@ -713,12 +824,11 @@ button { cursor: pointer; }
     order.forEach((item, i) => {
       seg(col++);
       if (item === 'SPLIT_TO_MIXER') { splits++; const kind = splits === 1 ? 'SPLIT' : 'MIXER'; if (kind === 'MIXER') mixerCol = col; put(makeNode(kind, i), col++); return; }
-      const key = { AMP: 'AMP', FX: 'FX', WAH: 'WAH', CHORUS: 'CHORUS', DELAY: 'DELAY', REVERB: 'REVERB', EQ: 'EQ', NS: 'NS', FV: 'FV' }[item];
-      if (key) put(makeTile(key, { chainIndex: i }), col++);
+      const key = Object.keys(V).find((k) => V[k].chain === item);
+      if (key) put(makeTile(key, i), col++);
     });
     seg(col++);
     const end = document.createElement('span'); end.className = 'endcap'; end.textContent = 'out'; put(end, col++);
-    // second lane: normal pickup joins at the mixer
     put(makeTile('NORMAL'), 1, 2);
     if (mixerCol) {
       const lane = document.createElement('span'); lane.className = 'lane'; lane.style.gridColumn = `2 / ${mixerCol}`; lane.style.gridRow = '2'; rail.appendChild(lane);
@@ -729,13 +839,14 @@ button { cursor: pointer; }
   function updateRail() {
     $('rail').querySelectorAll('.tile').forEach((t) => {
       const key = t.dataset.view; const on = isOn(key);
-      t.classList.toggle('on', on === true || (on === null && key !== 'FV'));
+      t.classList.toggle('on', on !== false);
       t.classList.toggle('off', on === false);
-      if (key === 'FV') t.classList.add('on');
       t.classList.toggle('sel', S.view === key);
+      const svg = `<svg viewBox="0 0 66 24" aria-hidden="true">${picture(key)}</svg>`;
+      const gr = t.querySelector('.gr'); if (gr.dataset.svg !== svg) { gr.innerHTML = svg; gr.dataset.svg = svg; }
       t.querySelector('.md').textContent = tileText(key);
       t.setAttribute('aria-pressed', String(S.view === key));
-      t.setAttribute('aria-label', `${V[key].title}${on === null ? '' : on ? '（ON）' : '（OFF）'} ${viewModel(key) || ''}`);
+      t.setAttribute('aria-label', `${V[key].title}${on === null ? '' : on ? ' (on)' : ' (off)'}, ${tileText(key)}`);
     });
     $('rail').querySelectorAll('.node.mixer').forEach((n) => n.classList.toggle('sel', S.view === 'MIXER'));
   }
@@ -770,26 +881,35 @@ button { cursor: pointer; }
     if (!v.power) return;
     const on = isOn(S.view);
     const b = document.createElement('button'); b.type = 'button'; b.className = 'power' + (on ? ' on' : '');
-    b.innerHTML = '<i></i><span></span>'; b.querySelector('span').textContent = on ? 'ON' : 'OFF';
-    b.setAttribute('aria-pressed', String(!!on)); b.setAttribute('aria-label', `${v.title}をON/OFF`);
+    b.innerHTML = '<i></i><span></span>'; b.querySelector('span').textContent = on ? 'On' : 'Off';
+    b.setAttribute('aria-pressed', String(!!on)); b.setAttribute('aria-label', `${v.title} on or off`);
     b.onclick = () => togglePower(S.view);
     box.appendChild(b);
+  }
+  function renderMove() {
+    const box = $('inspMove'); box.innerHTML = '';
+    const v = V[S.view]; if (!v.chain || !S.loaded) return;
+    const order = chainOrder(); const i = order.indexOf(v.chain);
+    for (const [dir, text] of [[-1, 'Move left'], [1, 'Move right']]) {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = text;
+      b.disabled = i + dir < 0 || i + dir >= order.length;
+      b.onclick = () => moveBlock(S.view, dir);
+      box.appendChild(b);
+    }
   }
   function renderInspector() {
     if (!S.loaded) return;
     if (!V[S.view]) S.view = 'AMP';
-    updateTitle(); updatePower(); renderViews();
+    closePicker();
+    updateTitle(); updatePower(); renderMove(); renderViews();
     S.updaters = [];
     const box = $('ctls'); box.innerHTML = '';
     const v = V[S.view];
     const list = viewParams(S.view);
-    if (!list.length) { const p = document.createElement('p'); p.className = 'none'; p.style.color = 'var(--muted)'; p.textContent = 'このブロックに編集できる項目はありません。'; box.appendChild(p); }
-    for (const g of groups(list, v.byNumber, v.sections)) {
-      const sec = document.createElement('section'); sec.className = 'group';
-      if (g.title) { const h = document.createElement('h3'); h.textContent = g.title; sec.appendChild(h); }
-      const row = document.createElement('div'); row.className = 'row';
-      for (const it of g.items) row.appendChild(makeControl(it.p, it.label));
-      sec.appendChild(row); box.appendChild(sec);
+    if (!list.length) { const p = document.createElement('p'); p.className = 'none'; p.textContent = 'This block has nothing else to adjust.'; box.appendChild(p); }
+    for (const g of groups(list, v)) {
+      if (g.title) { const h = document.createElement('h3'); h.className = 'ghead'; h.textContent = g.title; box.appendChild(h); }
+      for (const it of g.items) box.appendChild(makeCell(it.p, it.label));
     }
     renderBrowser();
   }
@@ -803,7 +923,7 @@ button { cursor: pointer; }
       const ul = document.createElement('ul');
       optsOf(p).forEach((name, i) => {
         const li = document.createElement('li'); const b = document.createElement('button'); b.type = 'button';
-        b.textContent = tc(name); b.dataset.value = String(p.min + i); b.dataset.abs = String(p.abs);
+        b.textContent = name; b.dataset.value = String(p.min + i); b.dataset.abs = String(p.abs);
         b.onclick = () => { setParam(p, p.min + i); afterStructural(); };
         li.appendChild(b); ul.appendChild(li);
       });
@@ -813,133 +933,155 @@ button { cursor: pointer; }
   }
   function updateBrowser() {
     $('browser').querySelectorAll('button[data-abs]').forEach((b) => {
-      const abs = +b.dataset.abs; const p = BLOCKS.flatMap((x) => x.params).find((q) => q.abs === abs);
-      b.setAttribute('aria-current', String(getVal(p) === +b.dataset.value));
+      b.setAttribute('aria-current', String(getVal(BY_ABS.get(+b.dataset.abs)) === +b.dataset.value));
     });
   }
   function afterStructural() { updateRail(); renderInspector(); }
 
-  // ---------- controls ----------
-  const ARC = 270; const START = 135;
-  const polar = (deg, r) => { const a = (deg - 90) * Math.PI / 180; return [32 + r * Math.cos(a), 32 + r * Math.sin(a)]; };
-  const arcPath = (from, to, r) => { const [x1, y1] = polar(from, r); const [x2, y2] = polar(to, r); const large = to - from > 180 ? 1 : 0; return `M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`; };
-  function knobSVG(frac, centered) {
-    const a0 = START + 90; const aEnd = a0 + ARC;
-    const val = a0 + ARC * frac;
-    const mid = a0 + ARC / 2;
-    const from = centered ? Math.min(mid, val) : a0; const to = centered ? Math.max(mid, val) : val;
-    const [ix, iy] = polar(val, 15);
-    return `<svg viewBox="0 0 64 64" aria-hidden="true">
-      <path class="trk" d="${arcPath(a0, aEnd, 28)}" fill="none" stroke-width="5" stroke-linecap="round"/>
-      ${to - from > 0.5 ? `<path class="val" d="${arcPath(from, to, 28)}" fill="none" stroke-width="5" stroke-linecap="round"/>` : ''}
-      <circle cx="32" cy="32" r="20.5" fill="#101112"/>
-      <circle cx="32" cy="32" r="19" fill="var(--knob-body)" stroke="#2f3135" stroke-width="2"/>
-      <circle cx="32" cy="31" r="15" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="1"/>
-      <line x1="32" y1="32" x2="${ix.toFixed(2)}" y2="${iy.toFixed(2)}" stroke="#ece7db" stroke-width="3" stroke-linecap="round"/>
-    </svg>`;
-  }
-  function makeControl(p, label) {
+  // ---------- parameter cells ----------
+  const isSwitch = (p) => { const o = optsOf(p); return o && o.length === 2 && /^(OFF|ON)$/i.test(o[0]) && /^(OFF|ON)$/i.test(o[1]); };
+  const isPick = (p) => { const o = optsOf(p); return o && o.length <= 64 && !isSwitch(p); };
+  function sizeClass(text) { return text.length > 12 ? ' s' : text.length > 7 ? ' m' : ''; }
+  function makeCell(p, label) {
+    const kind = isSwitch(p) ? 'sw' : isPick(p) ? 'list' : 'range';
     const opts = optsOf(p);
-    if (opts && opts.length === 2 && /^(OFF|ON)$/i.test(opts[0]) && /^(OFF|ON)$/i.test(opts[1])) return makeSwitch(p, label);
-    if (opts && opts.length <= 64) return makeSelect(p, label, opts);
-    return makeKnob(p, label);
-  }
-  function wrap(p, label, cls) {
-    const el = document.createElement('div'); el.className = 'ctl ' + (cls || '');
-    el.title = `${p.name}  [${hex(i2a(p.abs))}]  ${p.min}–${p.max}`;
-    return el;
-  }
-  function makeSwitch(p, label) {
-    const el = wrap(p, label, 'sw');
-    el.innerHTML = '<span class="v"></span><button type="button" class="swbtn"><i></i></button><span class="n"></span>';
+    const el = document.createElement('div');
+    el.className = `cell ${kind}`;
+    if (kind === 'list' && opts.some((o) => o.length > 9)) el.classList.add('wide');
+    el.tabIndex = 0;
+    el.setAttribute('role', kind === 'sw' ? 'switch' : kind === 'list' ? 'button' : 'slider');
+    el.setAttribute('aria-label', p.name);
+    el.title = `${p.name}  [${hex(i2a(p.abs))}]`;
+    el.innerHTML = `<span class="n"></span><span class="big"></span>${kind === 'sw' ? '<span class="pip"></span>' : kind === 'list' ? '<span class="steps"></span>' : '<span class="bar"><i></i></span>'}`
+      + (kind !== 'sw' ? '<span class="pm"><button type="button" tabindex="-1" aria-label="Decrease">−</button><button type="button" tabindex="-1" aria-label="Increase">+</button></span>' : '');
     el.querySelector('.n').textContent = label;
-    const btn = el.querySelector('button'); btn.setAttribute('aria-label', p.name);
-    btn.onclick = () => { setParam(p, getVal(p) === 1 ? 0 : 1); upd(); };
-    function upd() { const v = getVal(p); btn.setAttribute('aria-pressed', String(v === 1)); el.querySelector('.v').textContent = display(p, v); }
-    upd(); S.updaters.push(upd);
-    return el;
-  }
-  function makeSelect(p, label, opts) {
-    const el = wrap(p, label, 'wide');
-    el.innerHTML = '<span class="selbox"><select></select></span><span class="n"></span>';
-    el.querySelector('.n').textContent = label;
-    const sel = el.querySelector('select'); sel.setAttribute('aria-label', p.name);
-    opts.forEach((o, i) => sel.add(new Option(o, String(p.min + i))));
-    sel.onchange = () => { setParam(p, parseInt(sel.value, 10)); if (STRUCTURAL.some(([, n]) => n === p.name)) afterStructural(); };
-    function upd() { const v = getVal(p); if (v !== undefined && document.activeElement !== sel) sel.value = String(v); }
-    upd(); S.updaters.push(upd);
-    return el;
-  }
-  function makeKnob(p, label) {
-    const el = wrap(p, label);
-    el.innerHTML = '<span class="v"></span><div class="knob" tabindex="0" role="slider"></div><span class="n"></span>';
-    el.querySelector('.n').textContent = label;
-    const k = el.querySelector('.knob');
-    k.setAttribute('aria-label', p.name); k.setAttribute('aria-valuemin', String(p.min)); k.setAttribute('aria-valuemax', String(p.max));
+    const big = el.querySelector('.big');
     const centered = (p.view[0] === 'r' && p.view[1] < 0) || p.view[0] === 'pan' || p.view[0] === 'bal';
+    if (centered) el.querySelector('.bar')?.classList.add('center');
     const span = p.max - p.min;
-    let dragStart = null;
-    function upd(force) {
-      const v = getVal(p); if (v === undefined) return;
-      const busy = performance.now() - (S.touched.get(p.abs) || 0) < 900 && (dragStart || document.activeElement === k);
-      if (busy && !force) return;
-      paint(v);
+    const step = (n) => { const v = getVal(p) ?? p.min; if (setParam(p, v + n)) paint(); };
+
+    function paint() {
+      const v = getVal(p);
+      const [t, u] = parts(p, v);
+      big.className = 'big' + sizeClass(t);
+      big.textContent = t; if (u) { const s = document.createElement('small'); s.textContent = u; big.appendChild(s); }
+      if (kind === 'sw') { el.classList.toggle('on', v === 1); el.setAttribute('aria-checked', String(v === 1)); return; }
+      const f = v === undefined ? 0 : (v - p.min) / Math.max(1, span);
+      if (kind === 'list') {
+        const st = el.querySelector('.steps');
+        if (opts.length <= 16) {
+          if (st.childElementCount !== opts.length) st.innerHTML = '<i></i>'.repeat(opts.length);
+          Array.from(st.children).forEach((x, i) => x.classList.toggle('on', i === v - p.min));
+        } else { st.outerHTML = '<span class="bar"><i></i></span>'; }
+      }
+      const bar = el.querySelector('.bar i');
+      if (bar) { if (centered) { const l = Math.min(.5, f), r = Math.max(.5, f); bar.style.left = `${l * 100}%`; bar.style.width = `${(r - l) * 100}%`; } else { bar.style.left = '0'; bar.style.width = `${f * 100}%`; } }
+      el.setAttribute('aria-valuenow', String(v ?? '')); el.setAttribute('aria-valuetext', display(p, v));
     }
-    function paint(v) {
-      k.innerHTML = knobSVG(span ? (v - p.min) / span : 0, centered);
-      el.querySelector('.v').textContent = display(p, v);
-      k.setAttribute('aria-valuenow', String(v)); k.setAttribute('aria-valuetext', display(p, v));
-    }
-    function set(v) { v = Math.max(p.min, Math.min(p.max, Math.round(v))); setParam(p, v); paint(v); }
-    k.addEventListener('pointerdown', (e) => {
-      if (e.button !== 0) return;
-      k.setPointerCapture(e.pointerId); k.focus();
-      dragStart = { y: e.clientY, v: getVal(p) ?? p.min };
+    function upd() { const t = S.touched.get(p.abs) || 0; if (performance.now() - t < 900 && (el.classList.contains('drag') || el.querySelector('input'))) return; paint(); }
+
+    // pointer: horizontal swipe (touch) or any drag (mouse) changes the value; a tap acts
+    let g = null;
+    el.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0 || e.target.closest('.pm') || e.target.closest('input')) return;
+      g = { x: e.clientX, y: e.clientY, v: getVal(p) ?? p.min, type: e.pointerType, on: false, wasFocused: document.activeElement === el, id: e.pointerId };
     });
-    k.addEventListener('pointermove', (e) => {
-      if (!dragStart) return;
-      const px = e.shiftKey ? 900 : 220;
-      set(dragStart.v + ((dragStart.y - e.clientY) / px) * Math.max(span, 1));
+    el.addEventListener('pointermove', (e) => {
+      if (!g || e.pointerId !== g.id || kind === 'sw') return;
+      const dx = e.clientX - g.x; const dy = e.clientY - g.y;
+      if (!g.on) {
+        if (g.type === 'mouse') { if (Math.hypot(dx, dy) < 4) return; }
+        else if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) { if (Math.abs(dy) > 10) g = null; return; }
+        g.on = true; try { el.setPointerCapture(e.pointerId); } catch { /* pointer already gone */ } el.classList.add('drag'); el.focus({ preventScroll: true });
+      }
+      const delta = g.type === 'mouse' ? dx - dy : dx;
+      if (kind === 'list') setParam(p, g.v + Math.round(delta / (g.type === 'mouse' ? 16 : 26)));
+      else { const px = g.type === 'mouse' ? (e.shiftKey ? 1000 : 260) : Math.max(200, el.clientWidth * 2.4); setParam(p, g.v + (delta / px) * Math.max(span, 1)); }
+      paint();
     });
-    const end = () => { dragStart = null; };
-    k.addEventListener('pointerup', end); k.addEventListener('pointercancel', end);
-    k.addEventListener('wheel', (e) => { e.preventDefault(); const step = span > 200 ? Math.ceil(span / 100) : 1; set((getVal(p) ?? p.min) + (e.deltaY < 0 ? step : -step)); }, { passive: false });
-    k.addEventListener('keydown', (e) => {
-      const v = getVal(p) ?? p.min; const big = Math.max(1, Math.round(span / 10));
-      const map = { ArrowUp: v + 1, ArrowRight: v + 1, ArrowDown: v - 1, ArrowLeft: v - 1, PageUp: v + big, PageDown: v - big, Home: p.min, End: p.max };
-      if (e.key in map) { e.preventDefault(); set(map[e.key]); }
-      else if (e.key === 'Enter') { e.preventDefault(); editInline(); }
+    const end = (e) => {
+      if (!g || e.pointerId !== g.id) return;
+      const tapped = !g.on; const wasFocused = g.wasFocused; g = null; el.classList.remove('drag');
+      if (!tapped || e.type === 'pointercancel') return;
+      if (kind === 'sw') { setParam(p, getVal(p) === 1 ? 0 : 1); paint(); }
+      else if (kind === 'list') openPicker(p, el);
+      else if (wasFocused) editInline();
+    };
+    el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+    el.addEventListener('dblclick', () => { if (kind === 'range') editInline(); });
+    el.addEventListener('wheel', (e) => { if (document.activeElement !== el || kind === 'sw') return; e.preventDefault(); const n = span > 200 && kind === 'range' ? Math.ceil(span / 100) : 1; step(e.deltaY < 0 ? n : -n); }, { passive: false });
+    el.addEventListener('keydown', (e) => {
+      if (e.target !== el) return;
+      const big10 = Math.max(1, Math.round(span / 10));
+      const map = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1, PageUp: big10, PageDown: -big10 };
+      if (e.key in map && kind !== 'sw') { e.preventDefault(); step(map[e.key]); }
+      else if (e.key === 'Home' && kind !== 'sw') { e.preventDefault(); setParam(p, p.min); paint(); }
+      else if (e.key === 'End' && kind !== 'sw') { e.preventDefault(); setParam(p, p.max); paint(); }
+      else if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (kind === 'sw') { setParam(p, getVal(p) === 1 ? 0 : 1); paint(); } else if (kind === 'list') openPicker(p, el); else editInline();
+      }
     });
-    k.addEventListener('dblclick', editInline);
+    // +/- buttons with press-and-hold repeat
+    el.querySelectorAll('.pm button').forEach((b, i) => {
+      let t1 = null, t2 = null;
+      const stop = () => { clearTimeout(t1); clearInterval(t2); };
+      b.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); el.focus({ preventScroll: true }); step(i ? 1 : -1); t1 = setTimeout(() => { t2 = setInterval(() => step(i ? 1 : -1), 55); }, 380); });
+      ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => b.addEventListener(ev, stop));
+      b.addEventListener('click', (e) => e.stopPropagation());
+    });
     function editInline() {
-      const inp = document.createElement('input'); inp.className = 'edit'; inp.value = display(p, getVal(p)).replace(/\s*(dB|ms|s|cm|%)$/, '');
-      inp.setAttribute('aria-label', `${p.name}の値を入力`);
+      if (el.querySelector('input')) return;
+      const inp = document.createElement('input'); inp.className = 'edit'; inp.inputMode = 'decimal';
+      inp.value = parts(p, getVal(p))[0];
+      inp.setAttribute('aria-label', `Type a value for ${p.name}`);
       el.appendChild(inp); inp.focus(); inp.select();
       let done = false;
-      const finish = (ok) => {
-        if (done) return; done = true;
-        if (ok) { const v = parseDisplay(p, inp.value); if (v !== null) set(v); }
-        inp.remove(); k.focus();
-      };
-      inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') finish(true); else if (e.key === 'Escape') finish(false); });
+      const finish = (ok) => { if (done) return; done = true; if (ok) { const v = parseDisplay(p, inp.value); if (v !== null) setParam(p, v); } inp.remove(); paint(); el.focus({ preventScroll: true }); };
+      inp.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') finish(true); else if (e.key === 'Escape') finish(false); });
       inp.addEventListener('blur', () => finish(true), { once: true });
     }
-    upd(true); S.updaters.push(() => upd(false));
+    paint(); S.updaters.push(upd);
     return el;
   }
+
+  // ---------- option picker ----------
+  function openPicker(p, cell) {
+    closePicker();
+    const opts = optsOf(p); const cur = getVal(p);
+    $('pickerTitle').textContent = p.name;
+    const box = $('pickerOpts'); box.innerHTML = '';
+    opts.forEach((o, i) => {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = o;
+      b.setAttribute('aria-current', String(cur === p.min + i));
+      b.onclick = () => { setParam(p, p.min + i); closePicker(); if (STRUCT_ABS.has(p.abs)) afterStructural(); else { for (const u of S.updaters) u(); cell.focus({ preventScroll: true }); } };
+      box.appendChild(b);
+    });
+    const pk = $('picker'); pk.style.setProperty('--cat', getComputedStyle($('inspector')).getPropertyValue('--cat'));
+    pk.hidden = false; $('scrim').hidden = false;
+    const r = cell.getBoundingClientRect(); const w = pk.offsetWidth; const h = pk.offsetHeight;
+    let left = clamp(r.left, 12, innerWidth - w - 12); let top = r.bottom + 6;
+    if (top + h > innerHeight - 12) top = Math.max(12, r.top - h - 6);
+    pk.style.left = `${left}px`; pk.style.top = `${top}px`;
+    S.picker = cell;
+    (box.querySelector('[aria-current="true"]') || box.firstChild).focus({ preventScroll: false });
+  }
+  function closePicker() { if ($('picker').hidden) return; $('picker').hidden = true; $('scrim').hidden = true; S.picker = null; }
+  $('scrim').onclick = closePicker; $('pickerClose').onclick = closePicker;
 
   // ---------- patch list ----------
   function renderPatchList() {
     const ul = $('patchList'); ul.innerHTML = '';
     if (!S.names.some(Boolean)) {
       const li = document.createElement('li'); li.className = 'hint';
-      li.textContent = S.loaded ? '「名前を読む」で99パッチの名前を読み込みます（数秒かかります）。' : '接続すると、ここに99パッチが並びます。クリックで本体のパッチを切り替えます。';
+      li.textContent = S.loaded ? 'Load names to list the 99 user patches. It takes a few seconds.' : 'Connect to list the 99 user patches. Select one to switch the GP-10 to it.';
       ul.appendChild(li); return;
     }
     const q = $('patchSearch').value.trim().toUpperCase();
     for (let p = 1; p <= 99; p++) {
       const name = S.names[p] ?? '…';
-      if (q && !name.toUpperCase().includes(q) && !String(p).includes(q)) continue;
+      if (q && !name.toUpperCase().includes(q) && !String(p).padStart(2, '0').includes(q)) continue;
       const li = document.createElement('li'); li.tabIndex = 0;
       if (p === S.cur) { li.className = 'cur'; li.setAttribute('aria-current', 'true'); }
       li.innerHTML = '<span class="n"></span><span></span>';
@@ -956,7 +1098,7 @@ button { cursor: pointer; }
     const s = $('patchName').value.slice(0, 12);
     const bytes = Array.from(s.padEnd(12, ' '), (c) => { const x = c.charCodeAt(0); return x >= 0x20 && x <= 0x7D ? x : 0x20; });
     bytes.forEach((x, i) => S.mem.set(TEMP_BASE + i, x));
-    try { send(dt1(TEMP, bytes), `パッチ名を「${s}」に変更`); last(`パッチ名を「${s}」に変更しました`); } catch (e) { log(e.message); }
+    try { send(dt1(TEMP, bytes), `Rename patch to “${s}”`); last(`Renamed the patch to “${s}”`); } catch (e) { log(e.message); }
   });
   $('patchName').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('patchName').blur(); });
 
@@ -969,7 +1111,7 @@ button { cursor: pointer; }
     const url = URL.createObjectURL(new Blob([bytes], { type: 'application/octet-stream' }));
     const a = Object.assign(document.createElement('a'), { href: url, download: `GP-10_${name}.syx` });
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
-    log(`.syxに保存しました（${bytes.length}バイト）`); last(`「${name}」を.syxに保存しました`);
+    log(`Saved .syx (${bytes.length} bytes)`); last(`Saved “${name}” as .syx`);
   };
   $('btnImport').onclick = () => $('fileSyx').click();
   $('fileSyx').onchange = async () => {
@@ -980,15 +1122,15 @@ button { cursor: pointer; }
     for (const x of buf) { if (x === 0xF0) cur = [x]; else if (cur) { cur.push(x); if (x === 0xF7) { msgs.push(cur); cur = null; } } }
     const mapped = [];
     for (const r of msgs.map(parseDT1).filter((r) => r && !r.bad)) {
-      let base = a2i(r.addr);
-      if (base >= TEMP_BASE + SPAN && base < TEMP_BASE + SPAN * 100) base = TEMP_BASE + ((base - TEMP_BASE) % SPAN);
-      if (base >= TEMP_BASE && base < TEMP_BASE + SPAN) mapped.push({ addr: i2a(base), data: r.data });
+      let b0 = a2i(r.addr);
+      if (b0 >= TEMP_BASE + SPAN && b0 < TEMP_BASE + SPAN * 100) b0 = TEMP_BASE + ((b0 - TEMP_BASE) % SPAN);
+      if (b0 >= TEMP_BASE && b0 < TEMP_BASE + SPAN) mapped.push({ addr: i2a(b0), data: r.data });
     }
-    if (!mapped.length) { last('このファイルにはGP-10のパッチが見つかりませんでした'); return; }
+    if (!mapped.length) { last('No GP-10 patch data found in that file'); return; }
     enqueue(async () => {
-      log(`${file.name} を現在のパッチに送信（${mapped.length}メッセージ）`);
+      log(`Sending ${file.name} to the current patch (${mapped.length} messages)`);
       for (const r of mapped) { send(dt1(r.addr, r.data)); applyPacket(r); await sleep(25); }
-      await readTemp(); renderAll(); last(`${file.name} を現在のパッチに読み込みました`);
+      await readTemp(); renderAll(); last(`Loaded ${file.name} into the current patch`);
     });
   };
 
@@ -997,7 +1139,7 @@ button { cursor: pointer; }
     const fill = (sel, map, key) => {
       const ports = Array.from(map.values()); const prev = store.get(key, '');
       sel.innerHTML = '';
-      for (const p of ports) sel.add(new Option(p.name + (p.state === 'disconnected' ? '（切断）' : ''), p.id));
+      for (const p of ports) sel.add(new Option(p.name + (p.state === 'disconnected' ? ' (disconnected)' : ''), p.id));
       const pick = ports.find((p) => p.id === prev) || ports.find((p) => /GP-?10/i.test(p.name) && !/DAW/i.test(p.name)) || ports.find((p) => /GP-?10/i.test(p.name)) || ports[0];
       if (pick) sel.value = pick.id;
     };
@@ -1011,26 +1153,26 @@ button { cursor: pointer; }
     store.set('in', $('selIn').value); store.set('out', $('selOut').value);
     const ok = !!(S.input && S.output);
     $('btnNames').disabled = !ok;
-    if (!ok) setStatus('GP-10のMIDIポートが見つかりません。MIDI設定でポートを選んでください', 'err');
+    if (!ok) setStatus('No GP-10 MIDI port found. Choose the ports under MIDI.', 'err');
     return ok;
   }
   function envError(msg) { const n = $('envNotice'); n.textContent = msg; n.hidden = false; }
   async function connect() {
-    if (!('requestMIDIAccess' in navigator)) { envError('このブラウザはWeb MIDIに対応していません。ChromeかEdgeで開いてください。'); return; }
+    if (!('requestMIDIAccess' in navigator)) { envError('This browser does not support Web MIDI. Open the page in Chrome or Edge.'); return; }
     try { S.access = await navigator.requestMIDIAccess({ sysex: true }); }
-    catch (e) { envError(`MIDIデバイスの使用が許可されませんでした（${e.name}）。アドレスバーのサイト設定でMIDIを許可してから、もう一度接続してください。`); setStatus('MIDIが許可されていません', 'err'); return; }
-    S.access.onstatechange = (e) => { if (e.port.state === 'disconnected' && (e.port === S.input || e.port === S.output)) setStatus('GP-10が切断されました', 'err'); };
+    catch (e) { envError(`MIDI access was blocked (${e.name}). Allow MIDI devices for this page in the site settings, then connect again.`); setStatus('MIDI access blocked', 'err'); return; }
+    S.access.onstatechange = (e) => { if (e.port.state === 'disconnected' && (e.port === S.input || e.port === S.output)) setStatus('The GP-10 was disconnected', 'err'); };
     fillPorts();
     if (!bind()) return;
-    $('btnConnect').textContent = '再接続';
+    $('btnConnect').textContent = 'Reconnect';
     renderPatchList();
     await enqueue(async () => {
-      setStatus('GP-10を確認中…', 'busy');
+      setStatus('Looking for the GP-10…', 'busy');
       const id = waitIdentity(800);
       send([0xF0, 0x7E, 0x7F, 0x06, 0x01, 0xF7]);
       const r = await id;
-      if (!r) { setStatus('GP-10から応答がありません。電源とUSB、MIDI設定のポートを確認してください', 'err'); log('← Identity Requestに応答がありません'); return; }
-      log(`← Identity: Roland family ${hex(r.slice(6, 8))}${r[6] === 0x05 && r[7] === 0x03 ? '（GP-10）' : '（GP-10ではない可能性があります）'}`);
+      if (!r) { setStatus('No reply from the GP-10. Check the power, the USB cable and the MIDI ports.', 'err'); log('← No reply to the identity request'); return; }
+      log(`← Identity: Roland family ${hex(r.slice(6, 8))}${r[6] === 0x05 && r[7] === 0x03 ? ' (GP-10)' : ' (may not be a GP-10)'}`);
       if (r[2] !== 0x7F) $('inDev').value = h2(r[2]);
       await readCurrentNo(); await readTemp();
       renderPatchList();
@@ -1051,26 +1193,30 @@ button { cursor: pointer; }
   // ---------- wiring ----------
   $('btnConnect').onclick = connect; $('btnConnect2').onclick = connect;
   $('selIn').onchange = bind; $('selOut').onchange = bind;
-  $('btnReload').onclick = () => enqueue(async () => { await readCurrentNo(); await readTemp(); last('本体から読み直しました'); });
+  $('btnReload').onclick = () => enqueue(async () => { await readCurrentNo(); await readTemp(); last('Reloaded from the GP-10'); });
   $('btnNames').onclick = () => enqueue(readNames);
   $('btnPatches').onclick = () => { $('patches').classList.add('anim'); $('patches').classList.toggle('open'); };
   $('btnMidi').onclick = (e) => { e.stopPropagation(); const p = $('midiPanel'); p.hidden = !p.hidden; $('btnMidi').setAttribute('aria-expanded', String(!p.hidden)); };
   document.addEventListener('click', (e) => { const p = $('midiPanel'); if (!p.hidden && !p.contains(e.target)) { p.hidden = true; $('btnMidi').setAttribute('aria-expanded', 'false'); } });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { $('midiPanel').hidden = true; $('drawer').hidden = true; $('patches').classList.remove('open'); } });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (!$('picker').hidden) { const c = S.picker; closePicker(); if (c) c.focus(); return; }
+    $('midiPanel').hidden = true; $('drawer').hidden = true; $('patches').classList.remove('open');
+  });
   $('btnLog').onclick = () => { const d = $('drawer'); d.hidden = !d.hidden; $('btnLog').setAttribute('aria-expanded', String(!d.hidden)); if (!d.hidden) { $('log').textContent = logLines.join('\n'); $('log').scrollTop = $('log').scrollHeight; } };
   $('btnLogClose').onclick = () => { $('drawer').hidden = true; $('btnLog').setAttribute('aria-expanded', 'false'); };
   $('btnLogClear').onclick = () => { logLines.length = 0; $('log').textContent = ''; $('logCount').textContent = ''; };
   $('chkSync').onchange = () => {
     store.set('sync', $('chkSync').checked ? '1' : '0');
     clearInterval(S.syncTimer);
-    if ($('chkSync').checked) S.syncTimer = setInterval(() => { if (S.output && S.loaded && !S.collector && !S.pending.size) enqueue(readTemp); }, 1500);
+    if ($('chkSync').checked) S.syncTimer = setInterval(() => { if (S.output && S.loaded && !S.collector && !S.pending.size && $('picker').hidden) enqueue(readTemp); }, 1500);
   };
   $('chkSync').checked = store.get('sync', '0') === '1'; $('chkSync').onchange();
   $('inDev').value = store.get('dev', '10'); $('inDev').onchange = () => store.set('dev', $('inDev').value);
-  for (let c = 0; c < 16; c++) $('selCh').add(new Option(`ch ${c + 1}`, String(c)));
+  for (let c = 0; c < 16; c++) $('selCh').add(new Option(`Channel ${c + 1}`, String(c)));
   $('selCh').value = store.get('ch', '0'); $('selCh').onchange = () => store.set('ch', $('selCh').value);
-  if (!('requestMIDIAccess' in navigator)) envError('このブラウザはWeb MIDIに対応していません。ChromeかEdgeで開いてください。');
-  else if (!window.isSecureContext) envError('HTTPSかローカルファイルとして開いてください。この状態ではWeb MIDIが使えません。');
+  if (!('requestMIDIAccess' in navigator)) envError('This browser does not support Web MIDI. Open the page in Chrome or Edge.');
+  else if (!window.isSecureContext) envError('Open this page over HTTPS or as a local file. Web MIDI is not available here.');
 
   window.__gp10ed = { S, BLOCKS, B, P, getVal, display, visible, select, V };
 })();
