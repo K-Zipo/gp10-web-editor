@@ -1196,6 +1196,21 @@ if (typeof module !== 'undefined') module.exports = UsbMidi;
   }
   function afterStructural() { updateRail(); renderInspector(); }
 
+  // ---------- pointer gestures ----------
+  // A press ends when its pointer is released anywhere, even outside the control and before a drag
+  // started (no pointer capture yet). Without this, a press released elsewhere leaves the control
+  // "held" and merely passing over it later changes the value.
+  function onRelease(id, fn) {
+    const h = (e) => {
+      if (e && e.type !== 'blur' && e.pointerId !== id) return;
+      window.removeEventListener('pointerup', h); window.removeEventListener('pointercancel', h); window.removeEventListener('blur', h);
+      fn(e);
+    };
+    window.addEventListener('pointerup', h); window.addEventListener('pointercancel', h); window.addEventListener('blur', h);
+  }
+  // true when a mouse/pen move arrives with no button down (the release was missed)
+  const released = (e) => e.pointerType !== 'touch' && (e.buttons & 1) === 0;
+
   // ---------- tuning: fretboard ----------
   // Strings 1–6 in standard tuning (MIDI note numbers E4 B3 G3 D3 A2 E2) and a 10–46 set of gauges.
   const STD = [64, 59, 55, 50, 45, 40];
@@ -1308,10 +1323,12 @@ if (typeof module !== 'undefined') module.exports = UsbMidi;
       if (e.button !== 0) return;
       const at = valueAt(e);
       g = { row: at.row, x: e.clientX, y: e.clientY, id: e.pointerId, on: e.pointerType === 'mouse' };
+      const mine = g; onRelease(e.pointerId, () => { if (g === mine) g = null; });
       if (g.on) { try { board.setPointerCapture(e.pointerId); } catch { /* gone */ } set(g.row, at.v); e.preventDefault(); }
     });
     board.addEventListener('pointermove', (e) => {
       if (!g || e.pointerId !== g.id) return;
+      if (released(e)) { g = null; return; }
       if (!g.on) {
         const dx = e.clientX - g.x, dy = e.clientY - g.y;
         if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) { if (Math.abs(dy) > 10) g = null; return; }
@@ -1326,9 +1343,10 @@ if (typeof module !== 'undefined') module.exports = UsbMidi;
       const f = r.fine; let fg2 = null;
       const at = (e) => { const b = f.getBoundingClientRect(); return clamp(Math.round(((e.clientX - b.left) / b.width - 0.5) * 100), -50, 50); };
       const put = (x) => { if (!cfg.setFine) return; cfg.setFine(r.i, clamp(x, -50, 50)); paint(); };
-      f.addEventListener('pointerdown', (e) => { if (e.button !== 0 || !cfg.setFine) return; fg2 = { x: e.clientX, y: e.clientY, id: e.pointerId, on: e.pointerType === 'mouse' }; if (fg2.on) { try { f.setPointerCapture(e.pointerId); } catch { /* gone */ } put(at(e)); } });
+      f.addEventListener('pointerdown', (e) => { if (e.button !== 0 || !cfg.setFine) return; fg2 = { x: e.clientX, y: e.clientY, id: e.pointerId, on: e.pointerType === 'mouse' }; const mine = fg2; onRelease(e.pointerId, () => { if (fg2 === mine) fg2 = null; }); if (fg2.on) { try { f.setPointerCapture(e.pointerId); } catch { /* gone */ } put(at(e)); } });
       f.addEventListener('pointermove', (e) => {
         if (!fg2 || e.pointerId !== fg2.id) return;
+        if (released(e)) { fg2 = null; return; }
         if (!fg2.on) { const dx = e.clientX - fg2.x, dy = e.clientY - fg2.y; if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) { if (Math.abs(dy) > 10) fg2 = null; return; } fg2.on = true; try { f.setPointerCapture(e.pointerId); } catch { /* gone */ } }
         put(at(e));
       });
@@ -1512,9 +1530,11 @@ if (typeof module !== 'undefined') module.exports = UsbMidi;
     el.addEventListener('pointerdown', (e) => {
       if (e.button !== 0 || e.target.closest('.pm') || e.target.closest('input')) return;
       g = { x: e.clientX, y: e.clientY, v: getVal(p) ?? p.min, type: e.pointerType, on: false, wasFocused: document.activeElement === el, id: e.pointerId };
+      const mine = g; onRelease(e.pointerId, () => { if (g === mine) { g = null; el.classList.remove('drag'); } });
     });
     el.addEventListener('pointermove', (e) => {
       if (!g || e.pointerId !== g.id || kind === 'sw') return;
+      if (released(e)) { g = null; el.classList.remove('drag'); return; }
       const dx = e.clientX - g.x; const dy = e.clientY - g.y;
       if (!g.on) {
         if (g.type === 'mouse') { if (Math.hypot(dx, dy) < 4) return; }
@@ -1552,8 +1572,13 @@ if (typeof module !== 'undefined') module.exports = UsbMidi;
     // +/- buttons with press-and-hold repeat
     el.querySelectorAll('.pm button').forEach((b, i) => {
       let t1 = null, t2 = null;
-      const stop = () => { clearTimeout(t1); clearInterval(t2); };
-      b.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); el.focus({ preventScroll: true }); step(i ? 1 : -1); t1 = setTimeout(() => { t2 = setInterval(() => step(i ? 1 : -1), 55); }, 380); });
+      const stop = () => { clearTimeout(t1); clearInterval(t2); t1 = t2 = null; };
+      const tick = () => { if (!b.isConnected) { stop(); return; } step(i ? 1 : -1); };
+      b.addEventListener('pointerdown', (e) => {
+        e.preventDefault(); e.stopPropagation(); stop(); el.focus({ preventScroll: true }); step(i ? 1 : -1);
+        t1 = setTimeout(() => { t2 = setInterval(tick, 55); }, 380);
+        onRelease(e.pointerId, stop);
+      });
       ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => b.addEventListener(ev, stop));
       b.addEventListener('click', (e) => e.stopPropagation());
     });
