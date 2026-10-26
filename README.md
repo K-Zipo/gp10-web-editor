@@ -16,6 +16,18 @@ BOSS / Roland とは無関係の個人制作ツールです。BOSS、GP-10、Rol
 
 MIDI ポートは「GP-10」を選びます（「GP-10 DAW CTRL」ではありません）。名前に GP-10 を含むポートは自動で選ばれます。
 
+### ドライバなしで使う（Android など）
+
+「Connect over USB」を押すと、WebUSB で Chrome が GP-10 と直接通信します。ドライバを入れられない Android の Chrome を想定した接続方法です。
+
+- Android: GP-10 を USB OTG アダプタでつなぎ、HTTPS で公開したページ（GitHub Pages など）を Chrome で開いて「Connect over USB」を押します。※実機ではまだ試していません
+- Mac: GP-10 のドライバを止めているか入れていないときだけ使えます（ドライバなしの Mac で動作確認済み）。ドライバが動いているとドライバが GP-10 を使っているため接続できません。その場合は通常の「Connect」を使ってください
+- Windows: ドライバを入れずにつなぐと、Chrome から GP-10 を開けません（WinUSB の割り当てが必要なため）。通常の「Connect」を使ってください
+- 接続中は、BOSS TONE STUDIO などほかのアプリから GP-10 の MIDI を使えません。タブを閉じるか、MIDI メニューの「Use MIDI ports instead」で手放します
+- 最後に使った接続方法を覚えていて、次回は「Connect」もそちらでつなぎます
+
+中身は、GP-10 の MIDI 用インターフェース（interface 3、bulk OUT 3 / IN 4）を確保して、標準の USB-MIDI 1.0 パケット（4 バイト単位）で SysEx をやり取りしているだけです。GP-10 には仮想ケーブルが 2 本あり、ケーブル 0 が「GP-10」、ケーブル 1 が「GP-10 DAW CTRL」に当たります。エディタはケーブル 0 だけを使います。
+
 ## できること
 
 画面は Line 6 HX Edit を参考にした 2 段構成です。上に信号経路、下に選んだブロックの設定、右にモデルの一覧が並びます。画面の表記は英語です。
@@ -30,7 +42,7 @@ MIDI ポートは「GP-10」を選びます（「GP-10 DAW CTRL」ではあり�
 - パッチの `.syx` 保存・読み込み（読み込んだデータは現在のパッチに送られます）
 - MIDI ログ（画面下の「MIDI log」）
 
-スマートフォンや iPad は GP-10 のドライバを入れられず、iPhone / iPad のブラウザは Web MIDI に対応していないため、GP-10 を直接つないで使うことはできません。タッチ操作は、Windows のタブレットやタッチパネル PC などを想定しています。
+iPhone / iPad のブラウザは Web MIDI にも WebUSB にも対応していないため使えません。Android のスマートフォンやタブレットでは「Connect over USB」で使える見込みです（上記）。
 
 ### まだできないこと
 
@@ -46,9 +58,10 @@ MIDI ポートは「GP-10」を選びます（「GP-10 DAW CTRL」ではあり�
 | `bench/usb.html` | GP-10 USB probe。WebUSB でドライバなしに GP-10 と通信できるかを確かめる確認ページ（USB の構成表示と、USB-MIDI パケットでの Identity Request 送受信） |
 | `data/gp10-address-map.json` | GP-10 のアドレスマップ（Setup・System・パッチ全 37 ブロック、名前・範囲・表示変換・選択肢） |
 | `tools/editor.template.html` | エディタのテンプレート |
-| `tools/gen_data.py` | アドレスマップを圧縮してテンプレートに埋め込み、`index.html` を生成 |
+| `tools/usbmidi.js` | WebUSB 経由の USB-MIDI 送受信（ビルド時にエディタへ埋め込み） |
+| `tools/gen_data.py` | アドレスマップと `usbmidi.js` をテンプレートに埋め込み、`index.html` を生成 |
 | `tools/parse_mi.py` | 公式 MIDI Implementation（PDF をテキスト化したもの）からアドレスマップを生成 |
-| `tests/` | 擬似 GP-10（`mock-gp10.js`）を使った Playwright のテスト。`fixtures/` は実機のテンポラリパッチのダンプ |
+| `tests/` | 擬似 GP-10（`mock-gp10.js`、Web MIDI と WebUSB の両方を模擬）を使った Playwright のテストと、USB-MIDI パケット処理の単体テスト。`fixtures/` は実機のテンポラリパッチのダンプ |
 
 ## GP-10 の SysEx について（要点）
 
@@ -67,7 +80,7 @@ MIDI ポートは「GP-10」を選びます（「GP-10 DAW CTRL」ではあり�
 ```sh
 npm install            # Playwright（テスト用）
 npm run build          # data/ と tools/editor.template.html から index.html を生成
-npm test               # 擬似 GP-10 でエディタと Bench をテスト
+npm test               # 擬似 GP-10 でエディタ（Web MIDI / USB）と Bench をテスト
 ```
 
 アドレスマップを作り直す場合は、BOSS の公式サイトから GP-10 の MIDI Implementation（PDF）を各自で入手し、テキスト化してから実行します（PDF はリポジトリに含めていません）。

@@ -1,5 +1,5 @@
 """Build the compact parameter table embedded in the GP-10 web editor from gp10-address-map.json."""
-import json
+import json, os
 import sys
 
 src, template, out = sys.argv[1], sys.argv[2], sys.argv[3]
@@ -54,5 +54,8 @@ js = json.dumps(data, ensure_ascii=False, separators=(',', ':'))
 html = open(template, encoding='utf-8').read()
 assert '/*__GP10_DATA__*/null' in html
 html = html.replace('/*__GP10_DATA__*/null', js)
+usb_js = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'usbmidi.js'), encoding='utf-8').read()
+assert '/*__USBMIDI__*/' in html and '</script' not in usb_js
+html = html.replace('/*__USBMIDI__*/', usb_js.strip())
 open(out, 'w', encoding='utf-8').write(html)
 print('blocks', len(blocks), 'params', sum(len(b['p']) for b in blocks), 'option lists', len(opts), 'data bytes', len(js), 'html bytes', len(html))

@@ -38,7 +38,11 @@ function buildMock(mapPath, dumpPath) {
   const input = { id: 'in1', name: 'GP-10', manufacturer: 'Roland', type: 'input', state: 'connected', onmidimessage: null };
   const daw = { id: 'in2', name: 'GP-10 DAW CTRL', manufacturer: 'Roland', type: 'input', state: 'connected', onmidimessage: null };
   let t = 0;
-  const emit = (bytes) => { t = Math.max(t, performance.now()) + 3; setTimeout(() => input.onmidimessage && input.onmidimessage({ data: new Uint8Array(bytes) }), t - performance.now()); };
+  let usbRx = null; // when the page uses WebUSB, replies are queued as USB-MIDI packets here
+  const emit = (bytes) => {
+    if (usbRx) { usbRx.push(bytes); return; }
+    t = Math.max(t, performance.now()) + 3; setTimeout(() => input.onmidimessage && input.onmidimessage({ data: new Uint8Array(bytes) }), t - performance.now());
+  };
   const dt1 = (addr, data) => { const body = [...addr, ...data]; return [0xF0, 0x41, 0x10, 0, 0, 0, 5, 0x12, ...body, cs(body), 0xF7]; };
   function blocksAt(start, size) {
     if (start < TEMP) return [];
@@ -69,6 +73,48 @@ function buildMock(mapPath, dumpPath) {
         data.forEach((v, i) => mem.set(addr + i, v));
       }
     } };
+  // WebUSB face of the same mock: vendor interface 3 with bulk OUT 3 / IN 4, two cables,
+  // the RPN burst the real unit sends first, and replies split into 64-byte transfers.
+  const usbPk = (bytes, cable) => { const o = []; const c = cable << 4; let i = 0;
+    while (i < bytes.length) {
+      if (bytes[i] === 0xF0) { let j = bytes.indexOf(0xF7, i); const sx = bytes.slice(i, j + 1);
+        for (let k = 0; k < sx.length; k += 3) { const ch = sx.slice(k, k + 3); const last = k + 3 >= sx.length; o.push(c | (!last ? 4 : ch.length === 1 ? 5 : ch.length === 2 ? 6 : 7), ch[0], ch[1] || 0, ch[2] || 0); }
+        i = j + 1; } else { const n = (bytes[i] & 0xE0) === 0xC0 ? 2 : 3; o.push(c | (bytes[i] >> 4), bytes[i], bytes[i + 1], n === 3 ? bytes[i + 2] : 0); i += n; } }
+    return o; };
+  const usbUnpk = (d) => { const L = [0, 0, 2, 3, 3, 1, 2, 3, 3, 3, 3, 3, 2, 2, 3, 1]; const out = []; let cur = [];
+    for (let i = 0; i + 3 < d.length; i += 4) { if (d[i] >> 4) continue; const n = L[d[i] & 15]; const cin = d[i] & 15;
+      for (let k = 1; k <= n; k++) cur.push(d[i + k]);
+      if (cin !== 4) { out.push(cur); cur = []; } }
+    return out; };
+  const ep = (n, d, ty, sz) => ({ endpointNumber: n, direction: d, type: ty, packetSize: sz });
+  const alt = (cls, sub, eps, set = 0) => ({ alternateSetting: set, interfaceClass: cls, interfaceSubclass: sub, interfaceProtocol: 0, interfaceName: null, endpoints: eps });
+  const cfg = { configurationValue: 1, configurationName: null, interfaces: [
+    { interfaceNumber: 0, claimed: false, alternates: [alt(0xFF, 0xFF, [])] },
+    { interfaceNumber: 1, claimed: false, alternates: [alt(0xFF, 2, []), alt(0xFF, 2, [ep(13, 'out', 'isochronous', 256)], 1)] },
+    { interfaceNumber: 2, claimed: false, alternates: [alt(0xFF, 2, []), alt(0xFF, 2, [ep(14, 'in', 'isochronous', 256)], 1)] },
+    { interfaceNumber: 3, claimed: false, alternates: [alt(0xFF, 3, [ep(3, 'out', 'bulk', 512), ep(4, 'in', 'bulk', 512)]), alt(0xFF, 3, [ep(3, 'out', 'bulk', 512), ep(5, 'in', 'interrupt', 512)], 1)] },
+  ] };
+  const rxBytes = []; let rxWake = null; let gen = 0; // closing cancels pending reads, as on the real device
+  const usbListeners = new Set();
+  const usbDev = { productName: 'GP-10', manufacturerName: 'BOSS', vendorId: 0x0582, productId: 0x0185, deviceClass: 255, configurations: [cfg], configuration: null, opened: false,
+    async open() { this.opened = true; }, async close() { this.opened = false; usbRx = null; gen++; rxBytes.length = 0; if (rxWake) { const w = rxWake; rxWake = null; w(); } window.__dev.usbClosed = (window.__dev.usbClosed || 0) + 1; },
+    async selectConfiguration() { this.configuration = cfg; },
+    async claimInterface(n) { if (window.__usbClaimFails) throw new DOMException('Unable to claim interface.', 'NetworkError'); window.__dev.claimed = n;
+      usbRx = { push(bytes) { rxBytes.push(...usbPk(bytes, 0)); if (rxWake) { const w = rxWake; rxWake = null; w(); } } };
+      // the RPN burst on both cables, as the real unit sends after the claim
+      for (const v of [[0xB0, 0x65, 0], [0xB0, 0x64, 0], [0xB0, 0x06, 0x18], [0xB0, 0x26, 0]]) rxBytes.push(...usbPk(v, 0), ...usbPk(v, 1)); },
+    async releaseInterface() {}, async selectAlternateInterface() {}, async clearHalt() {},
+    async transferOut(n, data) { window.__dev.usbOut = (window.__dev.usbOut || 0) + 1; for (const m of usbUnpk(Array.from(data))) output.send(m); return { status: 'ok', bytesWritten: data.length }; },
+    async transferIn(n, len) {
+      const g = gen;
+      while (!rxBytes.length) { if (!this.opened || g !== gen) throw new DOMException('The device was closed.', 'NetworkError'); await new Promise((r) => { rxWake = r; setTimeout(r, 30); }); }
+      if (g !== gen) throw new DOMException('The transfer was cancelled.', 'AbortError');
+      const chunk = rxBytes.splice(0, 64); await new Promise((r) => setTimeout(r, 2));
+      return { status: 'ok', data: new DataView(new Uint8Array(chunk).buffer) }; } };
+  window.__dev.unplug = () => { usbDev.opened = false; for (const f of usbListeners) f({ device: usbDev }); };
+  Object.defineProperty(navigator, 'usb', { configurable: true, value: {
+    requestDevice: async () => usbDev, getDevices: async () => (window.__dev.claimed != null ? [usbDev] : []),
+    addEventListener: (t, f) => { if (t === 'disconnect') usbListeners.add(f); }, removeEventListener: (t, f) => usbListeners.delete(f) } });
   navigator.requestMIDIAccess = async () => ({ sysexEnabled: true, inputs: new Map([['in1', input], ['in2', daw]]), outputs: new Map([['out1', output]]), onstatechange: null });
 })();`;
 }

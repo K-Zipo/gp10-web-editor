@@ -75,6 +75,7 @@ button { cursor: pointer; }
 .pop-panel label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
 .pop-panel select, .pop-panel input { background: var(--rail); border: 1px solid var(--line); border-radius: 5px; padding: 6px 8px; }
 .pop-panel p { margin: 0; font-size: 13px; color: var(--muted); }
+.pop-panel .usbrow { display: grid; gap: 6px; padding-top: 10px; border-top: 1px solid var(--line); }
 
 /* ---------- layout ---------- */
 .body { display: grid; grid-template-columns: 228px minmax(0, 1fr); min-height: 0; }
@@ -289,6 +290,7 @@ button { cursor: pointer; }
         <label>Device ID (hex)<input id="inDev" value="10"></label>
         <label>Channel for program changes<select id="selCh"></select></label>
         <p>Pick the port named “GP-10”, not “GP-10 DAW CTRL”.</p>
+        <div class="usbrow" id="usbRow" hidden><button class="tbtn" id="btnUsb2">Connect over USB instead</button><p>For Android, or a computer without the GP-10 driver.</p></div>
       </div>
     </div>
     <button class="tbtn primary" id="btnConnect">Connect</button>
@@ -311,8 +313,9 @@ button { cursor: pointer; }
           </div>
           <h1>Connect your GP-10</h1>
           <p>Edit the current patch of a BOSS GP-10 connected over USB. Open this page in Chrome or Edge, press Connect, and allow access to MIDI devices. The GP-10 USB driver needs to be installed.</p>
+          <p id="usbHint" hidden>No driver, or on Android? Use <b>Connect over USB</b>. Chrome then talks to the GP-10 directly. This works only while the GP-10 driver is not installed or running.</p>
           <p id="envNotice" class="err" hidden></p>
-          <div class="actions"><button class="tbtn primary" id="btnConnect2">Connect GP-10</button></div>
+          <div class="actions"><button class="tbtn primary" id="btnConnect2">Connect GP-10</button><button class="tbtn" id="btnUsb" hidden>Connect over USB</button></div>
         </div>
       </section>
 
@@ -353,9 +356,13 @@ button { cursor: pointer; }
 </div>
 
 <script>
+/*__USBMIDI__*/
+</script>
+<script>
 (() => {
   'use strict';
   const DATA = /*__GP10_DATA__*/null;
+  const HAS_USB = typeof UsbMidi !== 'undefined' && 'usb' in navigator && window.isSecureContext !== false;
   const $ = (id) => document.getElementById(id);
 
   // ---------- SysEx helpers ----------
@@ -1145,25 +1152,68 @@ button { cursor: pointer; }
     };
     fill($('selIn'), S.access.inputs, 'in'); fill($('selOut'), S.access.outputs, 'out');
   }
-  function bind() {
+  function detach() {
     if (S.input) S.input.onmidimessage = null;
+    S.input = S.output = null;
+    if (S.usb) { const u = S.usb; S.usb = null; return u.close(); }
+    return Promise.resolve();
+  }
+  function setLink(kind) {
+    S.link = kind; store.set('link', kind);
+    $('btnUsb2').textContent = kind === 'usb' ? 'Use MIDI ports instead' : 'Connect over USB instead';
+  }
+  function bind() {
+    detach(); setLink('midi');
     S.input = S.access.inputs.get($('selIn').value) || null;
     S.output = S.access.outputs.get($('selOut').value) || null;
     if (S.input) S.input.onmidimessage = onMessage;
     store.set('in', $('selIn').value); store.set('out', $('selOut').value);
     const ok = !!(S.input && S.output);
     $('btnNames').disabled = !ok;
-    if (!ok) setStatus('No GP-10 MIDI port found. Choose the ports under MIDI.', 'err');
+    if (!ok) setStatus('No GP-10 MIDI port found. Choose the ports under MIDI' + (HAS_USB ? ', or use Connect over USB.' : '.'), 'err');
     return ok;
   }
   function envError(msg) { const n = $('envNotice'); n.textContent = msg; n.hidden = false; }
-  async function connect() {
-    if (!('requestMIDIAccess' in navigator)) { envError('This browser does not support Web MIDI. Open the page in Chrome or Edge.'); return; }
+  function envClear() { $('envNotice').hidden = true; }
+  function connect() { return S.link === 'usb' ? connectUsb() : connectMidi(); }
+  async function connectMidi() {
+    if (!('requestMIDIAccess' in navigator)) { envError('This browser does not support Web MIDI. Open the page in Chrome or Edge' + (HAS_USB ? ', or use Connect over USB.' : '.')); return; }
     try { S.access = await navigator.requestMIDIAccess({ sysex: true }); }
     catch (e) { envError(`MIDI access was blocked (${e.name}). Allow MIDI devices for this page in the site settings, then connect again.`); setStatus('MIDI access blocked', 'err'); return; }
     S.access.onstatechange = (e) => { if (e.port.state === 'disconnected' && (e.port === S.input || e.port === S.output)) setStatus('The GP-10 was disconnected', 'err'); };
     fillPorts();
-    if (!bind()) return;
+    setLink('midi');
+    if (!bind()) {
+      if (HAS_USB) envError('No GP-10 MIDI port was found. If the GP-10 driver is not installed (for example on Android), use Connect over USB.');
+      return;
+    }
+    envClear();
+    await start();
+  }
+  async function connectUsb() {
+    if (!HAS_USB) { envError('This browser does not support WebUSB. Use Chrome or Edge.'); return; }
+    let dev;
+    try { dev = await UsbMidi.pick(navigator.usb); }
+    catch (e) { if (e.name !== 'NotFoundError') envError(`Could not choose a USB device (${e.message})`); return; }
+    await detach();
+    setStatus('Opening the GP-10 over USB…', 'busy');
+    let u;
+    try {
+      u = await UsbMidi.open(dev, { usb: navigator.usb, onclose: (why) => {
+        if (S.usb !== u) return;
+        S.usb = null; S.input = S.output = null; $('btnNames').disabled = true;
+        setStatus(why === 'unplugged' ? 'The GP-10 was unplugged' : 'The USB connection was closed', 'err');
+        log('USB connection ' + why);
+      } });
+    } catch (e) { envError(e.message); setStatus('Could not connect over USB', 'err'); log('USB: ' + e.message); return; }
+    S.usb = u; setLink('usb');
+    S.input = u.input; S.output = u.output; S.input.onmidimessage = onMessage;
+    $('btnNames').disabled = false; $('midiPanel').hidden = true;
+    log(`USB: claimed interface ${u.iface.iface} (bulk OUT ${u.iface.outEp}, IN ${u.iface.inEp})`);
+    envClear();
+    await start();
+  }
+  async function start() {
     $('btnConnect').textContent = 'Reconnect';
     renderPatchList();
     await enqueue(async () => {
@@ -1171,7 +1221,7 @@ button { cursor: pointer; }
       const id = waitIdentity(800);
       send([0xF0, 0x7E, 0x7F, 0x06, 0x01, 0xF7]);
       const r = await id;
-      if (!r) { setStatus('No reply from the GP-10. Check the power, the USB cable and the MIDI ports.', 'err'); log('← No reply to the identity request'); return; }
+      if (!r) { setStatus('No reply from the GP-10. Check the power, the USB cable' + (S.link === 'usb' ? '.' : ' and the MIDI ports.'), 'err'); log('← No reply to the identity request'); return; }
       log(`← Identity: Roland family ${hex(r.slice(6, 8))}${r[6] === 0x05 && r[7] === 0x03 ? ' (GP-10)' : ' (may not be a GP-10)'}`);
       if (r[2] !== 0x7F) $('inDev').value = h2(r[2]);
       await readCurrentNo(); await readTemp();
@@ -1192,6 +1242,11 @@ button { cursor: pointer; }
 
   // ---------- wiring ----------
   $('btnConnect').onclick = connect; $('btnConnect2').onclick = connect;
+  $('btnUsb').onclick = connectUsb;
+  $('btnUsb2').onclick = () => { $('midiPanel').hidden = true; return S.link === 'usb' ? connectMidi() : connectUsb(); };
+  for (const id of ['btnUsb', 'usbRow', 'usbHint']) $(id).hidden = !HAS_USB;
+  setLink(HAS_USB && store.get('link', 'midi') === 'usb' ? 'usb' : 'midi');
+  window.addEventListener('pagehide', () => { if (S.usb) S.usb.close(); });
   $('selIn').onchange = bind; $('selOut').onchange = bind;
   $('btnReload').onclick = () => enqueue(async () => { await readCurrentNo(); await readTemp(); last('Reloaded from the GP-10'); });
   $('btnNames').onclick = () => enqueue(readNames);
@@ -1215,7 +1270,7 @@ button { cursor: pointer; }
   $('inDev').value = store.get('dev', '10'); $('inDev').onchange = () => store.set('dev', $('inDev').value);
   for (let c = 0; c < 16; c++) $('selCh').add(new Option(`Channel ${c + 1}`, String(c)));
   $('selCh').value = store.get('ch', '0'); $('selCh').onchange = () => store.set('ch', $('selCh').value);
-  if (!('requestMIDIAccess' in navigator)) envError('This browser does not support Web MIDI. Open the page in Chrome or Edge.');
+  if (!('requestMIDIAccess' in navigator) && !HAS_USB) envError('This browser does not support Web MIDI. Open the page in Chrome or Edge.');
   else if (!window.isSecureContext) envError('Open this page over HTTPS or as a local file. Web MIDI is not available here.');
 
   window.__gp10ed = { S, BLOCKS, B, P, getVal, display, visible, select, V };
