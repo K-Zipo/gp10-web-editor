@@ -244,6 +244,64 @@ button { cursor: pointer; }
   .views { margin-left: 0; overflow-x: auto; flex: 1 1 100%; }
 }
 @media (min-width: 861px) { #btnPatches { display: none; } }
+/* ---------- tuning: fretboard ---------- */
+.tune { grid-column: 1 / -1; display: grid; gap: 10px; min-width: 0; }
+.tune-tabs { display: flex; gap: 3px; flex-wrap: wrap; }
+.tune-tabs button { display: inline-flex; align-items: center; gap: 7px; background: var(--cell); border: 1px solid transparent; border-radius: 4px; padding: 6px 12px; font-weight: 600; color: var(--muted); }
+.tune-tabs button i { width: 7px; height: 7px; border-radius: 50%; background: #45484e; }
+.tune-tabs button i.on { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+.tune-tabs button[aria-pressed="true"] { color: var(--ink); border-color: var(--line); background: var(--cell-hi); }
+.tune-head { display: flex; gap: 6px 10px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.tune-head .grp { display: inline-flex; gap: 3px; align-items: center; }
+.tune-head .grp > span { margin-right: 3px; font-weight: 600; letter-spacing: .04em; font-size: 12px; }
+.chip { background: var(--cell); border: 1px solid var(--line); border-radius: 4px; padding: 4px 9px; color: var(--ink); font-weight: 600; min-height: 30px; }
+.chip[aria-pressed="true"] { background: var(--mustard); border-color: var(--mustard); color: var(--mustard-ink); }
+.chip.sq { min-width: 30px; padding: 4px 6px; }
+.tune-head .spacer { flex: 1; }
+.tune-note { margin: 0; font-size: 13px; color: var(--muted); }
+.fb { display: grid; grid-template-columns: 30px minmax(0, 1fr) 96px 64px 150px; grid-template-rows: repeat(6, 48px); background: var(--cell); border-radius: 4px; overflow: hidden; }
+.fb.off .board, .fb.off .fb-note, .fb.off .fb-fine { opacity: .45; }
+.fb-num { grid-column: 1; display: flex; align-items: center; justify-content: center; font-family: var(--lcd); font-size: 13px; color: var(--faint); }
+.fb-note { grid-column: 3; display: flex; align-items: baseline; gap: 6px; padding-left: 14px; align-self: center; font-weight: 700; font-size: 24px; white-space: nowrap; }
+.fb-note s { text-decoration: none; color: var(--faint); font-weight: 600; font-size: 15px; }
+.fb-note.same { color: var(--muted); }
+.fb-note small { font-size: 12px; color: var(--muted); font-weight: 600; }
+.fb-shift { grid-column: 4; display: flex; align-items: center; justify-content: flex-end; font-family: var(--lcd); font-size: 14px; color: var(--muted); white-space: nowrap; }
+.fb-shift.ch { color: var(--mustard); }
+.fb-fine { grid-column: 5; position: relative; margin: 0 14px; height: 34px; align-self: center; touch-action: pan-y; cursor: ew-resize; outline: none; border-radius: 3px; }
+.fb-fine:focus-visible { box-shadow: 0 0 0 2px var(--mustard); }
+.fb-fine .sc { position: absolute; left: 0; right: 0; bottom: 6px; height: 10px; background: repeating-linear-gradient(90deg, var(--faint) 0 1px, transparent 1px 10%); opacity: .7; }
+.fb-fine .z { position: absolute; left: 50%; bottom: 4px; width: 2px; height: 16px; margin-left: -1px; background: var(--ok); border-radius: 1px; }
+.fb-fine .nd { position: absolute; bottom: 4px; width: 3px; height: 24px; margin-left: -1.5px; background: var(--ink); border-radius: 2px; }
+.fb-fine b { position: absolute; right: 0; top: -3px; font-family: var(--lcd); font-size: 11px; color: var(--muted); font-weight: 500; }
+.fb-fine.na { cursor: default; } .fb-fine.na .nd { display: none; }
+.board { grid-column: 2; grid-row: 1 / 7; position: relative; background: linear-gradient(90deg, #1f1c18, #27231e 50%, #1f1c18); touch-action: pan-y; cursor: pointer; overflow: hidden; }
+.board .fret { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: linear-gradient(90deg, #5a554c, #9a9487, #5a554c); }
+.board .nut { position: absolute; top: 0; bottom: 0; width: 5px; margin-left: -2.5px; background: linear-gradient(90deg, #cfc7b2, #f1ead8, #cfc7b2); }
+.board .inlay { position: absolute; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: #d8d0bd; opacity: .22; }
+.board .str { position: absolute; left: 0; right: 0; transform: translateY(-50%); border-radius: 3px; pointer-events: none; }
+.board .str.plain { background: linear-gradient(180deg, #f4f2ec 0%, #b9b7b0 45%, #7d7c78 100%); }
+.board .str.wound { background: repeating-linear-gradient(100deg, rgba(0,0,0,.38) 0 1px, transparent 1px 3px), linear-gradient(180deg, #efe2c6 0%, #bba57c 45%, #6e604a 100%); }
+.board .ring { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; border: 2px solid #cfc7b2; pointer-events: none; }
+.board .bend { position: absolute; height: 4px; margin-top: -2px; background: var(--mustard); opacity: .55; border-radius: 2px; pointer-events: none; }
+.board .fg { position: absolute; width: 24px; height: 24px; margin: -12px 0 0 -12px; border-radius: 50%; background: var(--mustard); color: var(--mustard-ink); font: 700 11px var(--lcd); display: grid; place-items: center; box-shadow: 0 0 0 3px rgba(226,167,46,.22), 0 2px 6px rgba(0,0,0,.5); outline: none; }
+.board .fg:focus-visible { box-shadow: 0 0 0 3px var(--ink); }
+.board .fg.zero { width: 16px; height: 16px; margin: -8px 0 0 -8px; background: transparent; border: 2px solid #cfc7b2; box-shadow: none; color: transparent; }
+.board .fg.zero:focus-visible { border-color: var(--mustard); }
+.board.preset .fg:not(.zero) { background: #b9b2a2; box-shadow: 0 2px 6px rgba(0,0,0,.5); }
+.board .range { position: absolute; right: 6px; bottom: 4px; font: 500 10px var(--lcd); color: #8b857a; pointer-events: none; }
+.tune-cells { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px; }
+.tune-cells .ghead { padding-top: 6px; }
+.tune-cells .cell { min-height: 82px; }
+.tune-cells.one { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
+@media (max-width: 560px) {
+  .fb { grid-template-columns: 22px minmax(0, 1fr) 62px 64px; }
+  .fb-shift { display: none; }
+  .fb-note { grid-column: 3; font-size: 20px; padding-left: 8px; gap: 3px; }
+  .fb-note s { font-size: 12px; }
+  .fb-fine { grid-column: 4; margin: 0 8px 0 4px; }
+  .tune-cells { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 @media (max-width: 560px) {
   .top { gap: 8px; padding: 8px 12px; }
   .lcd input { width: 12ch; font-size: 16px; }
@@ -494,7 +552,7 @@ button { cursor: pointer; }
     NS: { title: 'Noise Suppressor', ab: 'NS', cat: '--c-ns', power: ['NS', 'NS Switch'], block: 'NS', model: () => '', chain: 'NS' },
     FV: { title: 'Foot Volume', ab: 'FV', cat: '--c-fv', block: 'Foot Volume', model: () => '', chain: 'FV' },
     PATCH: { title: 'Patch', cat: '--c-patch', util: true, params: () => ['Patch Level', 'Patch Tempo', 'Patch GK Set Select'].map((n) => P('Common', n)) },
-    TUNE: { title: 'Tuning', cat: '--c-patch', util: true, block: 'TUNE',
+    TUNE: { title: 'Tuning', cat: '--c-patch', util: true, block: 'TUNE', custom: (box) => renderTuning(box),
       sections: [[/^Alternate Tuning /, 'Alternate tuning'], [/^12-String (Tuning )?/, '12-string'], [/^String Bend /, 'String bend']] },
     CTL: { title: 'Controllers', cat: '--c-patch', util: true, block: 'Controller Function' },
     ASSIGN: { title: 'Assigns', cat: '--c-patch', util: true, block: 'Controller Assign', byNumber: true },
@@ -912,6 +970,7 @@ button { cursor: pointer; }
     S.updaters = [];
     const box = $('ctls'); box.innerHTML = '';
     const v = V[S.view];
+    if (v.custom) { v.custom(box); renderBrowser(); return; }
     const list = viewParams(S.view);
     if (!list.length) { const p = document.createElement('p'); p.className = 'none'; p.textContent = 'This block has nothing else to adjust.'; box.appendChild(p); }
     for (const g of groups(list, v)) {
@@ -944,6 +1003,274 @@ button { cursor: pointer; }
     });
   }
   function afterStructural() { updateRail(); renderInspector(); }
+
+  // ---------- tuning: fretboard ----------
+  // Strings 1–6 in standard tuning (MIDI note numbers E4 B3 G3 D3 A2 E2) and a 10–46 set of gauges.
+  const STD = [64, 59, 55, 50, 45, 40];
+  const GAUGE = [0.010, 0.013, 0.017, 0.026, 0.036, 0.046];
+  const SHARP = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
+  const FLAT = ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'G♭', 'G', 'A♭', 'A', 'B♭', 'B'];
+  const noteName = (n, flat) => (flat ? FLAT : SHARP)[((n % 12) + 12) % 12];
+  // Semitone shift of strings 1..6 for each preset (standard spellings of these tunings).
+  const TUNING_PRESETS = {
+    'OPEN D': [-2, -2, -1, 0, 0, -2], 'OPEN E': [0, 0, 1, 2, 2, 0], 'OPEN G': [-2, 0, 0, 0, -2, -2], 'OPEN A': [0, 2, 2, 2, 0, 0],
+    'DROP D': [0, 0, 0, 0, 0, -2], 'DROP Db': [-1, -1, -1, -1, -1, -3], 'DROP C': [-2, -2, -2, -2, -2, -4],
+    'DROP B': [-3, -3, -3, -3, -3, -5], 'DROP Bb': [-4, -4, -4, -4, -4, -6], 'DROP A': [-5, -5, -5, -5, -5, -7],
+    'D-MODAL': [-2, -2, 0, 0, 0, -2], 'NASHVL': [0, 0, 12, 12, 12, 12],
+  };
+  const presetShifts = (name) => {
+    if (!name) return null;
+    if (TUNING_PRESETS[name]) return TUNING_PRESETS[name];
+    const m = name.match(/^([+-]\d+) STEP$/); return m ? new Array(6).fill(+m[1]) : null;
+  };
+  const prettyNote = (s) => s.replace(/([A-G])b$/, '$1♭');
+  const tp = (name) => P('TUNE', name);
+  const sv = (p) => { const v = getVal(p); return v === undefined ? 0 : p.view[1] + (v - p.min) * p.view[2]; };
+  const setSv = (p, x) => setParam(p, p.min + Math.round((x - p.view[1]) / p.view[2]));
+  const fmtSt = (x) => (x > 0 ? '+' : '') + x;
+  const altPreset = () => { const t = listText(tp('Alternate Tuning Select')); return t ? t.trim() : null; };
+
+  function chip(text, pressed, onClick, extra = '') {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'chip ' + extra; b.textContent = text;
+    b.setAttribute('aria-pressed', String(!!pressed)); b.onclick = onClick; return b;
+  }
+
+  // A six-string fretboard. cfg.row(i) → { v, fine, ring, note: [from, to, extra] }.
+  function fretboard(cfg) {
+    const el = document.createElement('div'); el.className = 'fb';
+    const board = document.createElement('div'); board.className = 'board'; el.appendChild(board);
+    const rows = [];
+    let R = 12;
+    for (let i = 0; i < 6; i++) {
+      const row = { i };
+      const num = document.createElement('div'); num.className = 'fb-num'; num.style.gridRow = String(i + 1); num.textContent = String(i + 1);
+      row.note = document.createElement('div'); row.note.className = 'fb-note'; row.note.style.gridRow = String(i + 1);
+      row.shift = document.createElement('div'); row.shift.className = 'fb-shift'; row.shift.style.gridRow = String(i + 1);
+      row.fine = document.createElement('div'); row.fine.className = 'fb-fine'; row.fine.style.gridRow = String(i + 1);
+      row.fine.innerHTML = '<span class="sc"></span><span class="z"></span><span class="nd"></span><b></b>';
+      el.append(num, row.note, row.shift, row.fine);
+      rows.push(row);
+    }
+    const L = (v) => 50 + (v / R) * 50;
+    const mid = (v) => (v ? L(v - 0.5 * Math.sign(v)) : 50);
+    function build() {
+      board.innerHTML = '';
+      const add = (cls, style, text) => { const d = document.createElement('div'); d.className = cls; Object.assign(d.style, style); if (text) d.textContent = text; board.appendChild(d); return d; };
+      for (let v = -R; v <= R; v++) if (v) add('fret', { left: L(v) + '%' });
+      add('nut', { left: '50%' });
+      for (const f of [3, 5, 7, 9, 15, 17, 19, 21].filter((f) => f <= R)) for (const d of [f, -f]) add('inlay', { left: mid(d) + '%', top: '50%' });
+      for (const f of [12, 24].filter((f) => f <= R)) for (const d of [f, -f]) for (const t of ['33.3%', '66.7%']) add('inlay', { left: mid(d) + '%', top: t });
+      add('range', {}, `±${R}`);
+      for (const row of rows) {
+        const y = ((row.i + 0.5) / 6) * 100 + '%';
+        add('str ' + (row.i >= 3 ? 'wound' : 'plain'), { top: y, height: (1 + GAUGE[row.i] * 95).toFixed(2) + 'px' });
+        row.ring = add('ring', { top: y, left: '50%', display: 'none' });
+        row.bendBar = add('bend', { top: y, display: 'none' });
+        const fg = add('fg', { top: y });
+        fg.tabIndex = 0; fg.setAttribute('role', 'slider'); fg.setAttribute('aria-label', `String ${row.i + 1} ${cfg.what}`);
+        fg.addEventListener('keydown', (e) => {
+          const d = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1 }[e.key];
+          if (d) { e.preventDefault(); set(row.i, cfg.row(row.i).v + d); }
+          else if (e.key === 'Home' || e.key === '0') { e.preventDefault(); set(row.i, 0); }
+        });
+        row.fg = fg;
+      }
+    }
+    function set(i, v) { v = clamp(Math.round(v), -24, 24); cfg.set(i, v); paint(); rows[i].fg.focus({ preventScroll: true }); }
+    function paint() {
+      const data = rows.map((r) => cfg.row(r.i));
+      const want = data.some((d) => Math.abs(d.v) > 12) || S.tuneWide ? 24 : R === 24 && cfg.keepWide ? 24 : 12;
+      if (want !== R || !board.childElementCount) { R = want; build(); }
+      el.classList.toggle('off', !cfg.on());
+      board.classList.toggle('preset', !!cfg.preset && cfg.preset());
+      data.forEach((d, i) => {
+        const r = rows[i];
+        r.fg.style.left = mid(d.v) + '%'; r.fg.classList.toggle('zero', !d.v); r.fg.textContent = d.v ? fmtSt(d.v) : '';
+        r.fg.setAttribute('aria-valuenow', String(d.v)); r.fg.setAttribute('aria-valuetext', `${fmtSt(d.v)} semitones, ${d.note[1]}`);
+        r.ring.style.display = d.ring && d.v ? '' : 'none';
+        if (cfg.bend && d.v) { const a = 50, b = mid(d.v); r.bendBar.style.display = ''; r.bendBar.style.left = Math.min(a, b) + '%'; r.bendBar.style.width = Math.abs(b - a) + '%'; } else r.bendBar.style.display = 'none';
+        const [from, to, extra] = d.note;
+        r.note.className = 'fb-note' + (from ? '' : ' same'); r.note.innerHTML = '';
+        if (from) { const s = document.createElement('s'); s.textContent = from + (cfg.bend ? (d.v > 0 ? ' ↗' : ' ↘') : ' →'); r.note.appendChild(s); }
+        r.note.appendChild(document.createTextNode(to));
+        if (extra) { const sm = document.createElement('small'); sm.textContent = extra; r.note.appendChild(sm); }
+        r.shift.className = 'fb-shift' + (d.v ? ' ch' : ''); r.shift.textContent = `${fmtSt(d.v)} st`;
+        const fine = r.fine;
+        if (d.fine === undefined) { fine.style.display = 'none'; return; }
+        fine.style.display = ''; fine.classList.toggle('na', d.fine === null);
+        fine.querySelector('.nd').style.left = (50 + (d.fine || 0)) + '%';
+        fine.querySelector('b').textContent = d.fine === null ? '' : `${d.fine > 0 ? '+' : ''}${d.fine}¢`;
+        fine.tabIndex = cfg.setFine ? 0 : -1; fine.setAttribute('role', 'slider'); fine.setAttribute('aria-label', `String ${i + 1} fine tune`);
+        fine.setAttribute('aria-valuenow', String(d.fine ?? 0));
+      });
+    }
+    // board: tap a fret or drag the string sideways (touch needs a sideways start, so the page still scrolls)
+    const valueAt = (e) => {
+      const r = board.getBoundingClientRect();
+      const pos = ((e.clientX - r.left) / r.width - 0.5) * 2 * R;
+      const v = Math.abs(pos) < 0.3 ? 0 : Math.sign(pos) * Math.ceil(Math.abs(pos) - 0.3 + 0.0001);
+      return { row: clamp(Math.floor(((e.clientY - r.top) / r.height) * 6), 0, 5), v: clamp(v, -R, R) };
+    };
+    let g = null;
+    board.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      const at = valueAt(e);
+      g = { row: at.row, x: e.clientX, y: e.clientY, id: e.pointerId, on: e.pointerType === 'mouse' };
+      if (g.on) { try { board.setPointerCapture(e.pointerId); } catch { /* gone */ } set(g.row, at.v); e.preventDefault(); }
+    });
+    board.addEventListener('pointermove', (e) => {
+      if (!g || e.pointerId !== g.id) return;
+      if (!g.on) {
+        const dx = e.clientX - g.x, dy = e.clientY - g.y;
+        if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) { if (Math.abs(dy) > 10) g = null; return; }
+        g.on = true; try { board.setPointerCapture(e.pointerId); } catch { /* gone */ }
+      }
+      const v = valueAt(e).v; if (v !== cfg.row(g.row).v) set(g.row, v);
+    });
+    const end = (e) => { if (!g || e.pointerId !== g.id) return; const tap = !g.on; const row = g.row; g = null; if (tap && e.type === 'pointerup') set(row, valueAt(e).v); };
+    board.addEventListener('pointerup', end); board.addEventListener('pointercancel', end);
+    // fine: tap or drag on the scale sets cents; arrows step; double-click resets
+    rows.forEach((r) => {
+      const f = r.fine; let fg2 = null;
+      const at = (e) => { const b = f.getBoundingClientRect(); return clamp(Math.round(((e.clientX - b.left) / b.width - 0.5) * 100), -50, 50); };
+      const put = (x) => { if (!cfg.setFine) return; cfg.setFine(r.i, clamp(x, -50, 50)); paint(); };
+      f.addEventListener('pointerdown', (e) => { if (e.button !== 0 || !cfg.setFine) return; fg2 = { x: e.clientX, y: e.clientY, id: e.pointerId, on: e.pointerType === 'mouse' }; if (fg2.on) { try { f.setPointerCapture(e.pointerId); } catch { /* gone */ } put(at(e)); } });
+      f.addEventListener('pointermove', (e) => {
+        if (!fg2 || e.pointerId !== fg2.id) return;
+        if (!fg2.on) { const dx = e.clientX - fg2.x, dy = e.clientY - fg2.y; if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) { if (Math.abs(dy) > 10) fg2 = null; return; } fg2.on = true; try { f.setPointerCapture(e.pointerId); } catch { /* gone */ } }
+        put(at(e));
+      });
+      const fend = (e) => { if (!fg2 || e.pointerId !== fg2.id) return; const tap = !fg2.on; fg2 = null; if (tap && e.type === 'pointerup') put(at(e)); };
+      f.addEventListener('pointerup', fend); f.addEventListener('pointercancel', fend);
+      f.addEventListener('dblclick', () => put(0));
+      f.addEventListener('keydown', (e) => {
+        const cur = cfg.row(r.i).fine || 0;
+        const d = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1, PageUp: 10, PageDown: -10 }[e.key];
+        if (d) { e.preventDefault(); put(cur + d); } else if (e.key === 'Home' || e.key === '0') { e.preventDefault(); put(0); }
+      });
+    });
+    paint();
+    return { el, paint };
+  }
+
+  function renderTuning(box) {
+    const wrap = document.createElement('div'); wrap.className = 'tune'; box.appendChild(wrap);
+    const tab = S.tuneTab = S.tuneTab || store.get('tuneTab', 'alt');
+    const TABS = [['alt', 'Alternate tuning', 'Alternate Tuning Switch'], ['12', '12-string', '12-String Switch'], ['bend', 'String bend', 'String Bend Switch']];
+    const nav = document.createElement('div'); nav.className = 'tune-tabs'; nav.setAttribute('role', 'tablist'); wrap.appendChild(nav);
+    const leds = [];
+    for (const [key, title, sw] of TABS) {
+      const b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-pressed', String(tab === key));
+      const led = document.createElement('i'); b.append(led, document.createTextNode(title)); leds.push([led, tp(sw)]);
+      b.onclick = () => { S.tuneTab = key; store.set('tuneTab', key); renderInspector(); };
+      nav.appendChild(b);
+    }
+    const head = document.createElement('div'); head.className = 'tune-head'; wrap.appendChild(head);
+    const swP = tp(TABS.find((t) => t[0] === tab)[2]);
+    const sw = document.createElement('button'); sw.type = 'button'; sw.className = 'power';
+    sw.innerHTML = '<i></i><span></span>'; sw.onclick = () => { setParam(swP, getVal(swP) === 1 ? 0 : 1); paintAll(); };
+    head.appendChild(sw);
+    const chips = [];
+    let board; let note = null; let cells = null; const extraCells = [];
+
+    if (tab === 'alt') {
+      const sel = tp('Alternate Tuning Select'); const opts = optsOf(sel).map((o) => o.trim());
+      const pick = (name) => { setParam(sel, sel.min + opts.indexOf(name)); paintAll(); };
+      const group = (label, names, short) => {
+        const gEl = document.createElement('span'); gEl.className = 'grp'; const t = document.createElement('span'); t.textContent = label; gEl.appendChild(t);
+        for (const n of names) { const c = chip(short ? prettyNote(n.replace(label + ' ', '')) : n, false, () => pick(n), short ? 'sq' : ''); c.dataset.preset = n; chips.push(c); gEl.appendChild(c); }
+        head.appendChild(gEl);
+      };
+      group('OPEN', ['OPEN D', 'OPEN E', 'OPEN G', 'OPEN A'], true);
+      group('DROP', ['DROP D', 'DROP Db', 'DROP C', 'DROP B', 'DROP Bb', 'DROP A'], true);
+      // STEP: one chip with −/+ (−12…+12, skipping 0)
+      const stepG = document.createElement('span'); stepG.className = 'grp'; const st = document.createElement('span'); st.textContent = 'STEP'; stepG.appendChild(st);
+      const curStep = () => { const m = (altPreset() || '').match(/^([+-]\d+) STEP$/); return m ? +m[1] : null; };
+      const goStep = (n) => pick(`${n > 0 ? '+' : ''}${n} STEP`);
+      const stepBy = (d) => { let n = (curStep() ?? 0) + d; if (n === 0) n += d; goStep(clamp(n, -12, 12)); };
+      const minus = chip('−', false, () => stepBy(-1), 'sq'); minus.setAttribute('aria-label', 'Step down');
+      const stepC = chip('−1', false, () => goStep(curStep() ?? -1), 'sq'); stepC.dataset.step = '1';
+      const plus = chip('+', false, () => stepBy(1), 'sq'); plus.setAttribute('aria-label', 'Step up');
+      stepG.append(minus, stepC, plus); head.appendChild(stepG);
+      chips.push(stepC);
+      group('', ['D-MODAL', 'NASHVL', 'USER'], false);
+      const wide = chip('±24', S.tuneWide, () => { S.tuneWide = !S.tuneWide; wide.setAttribute('aria-pressed', String(!!S.tuneWide)); board.paint(); }, 'sq');
+      wide.title = 'Show ±24 semitones'; const sp = document.createElement('span'); sp.className = 'spacer'; head.append(sp, wide);
+      const shiftP = (i) => tp(`Alternate Tuning Shift ${i + 1}`); const fineP = (i) => tp(`Alternate Tuning Fine ${i + 1}`);
+      // Editing a preset copies its notes into USER first, so what you see is what you edit.
+      const toUser = () => {
+        const ps = presetShifts(altPreset()); if (!ps) return;
+        ps.forEach((x, i) => setSv(shiftP(i), x)); for (let i = 0; i < 6; i++) setSv(fineP(i), 0);
+        setParam(sel, sel.min + opts.indexOf('USER'));
+      };
+      const shifts = () => presetShifts(altPreset()) || [0, 1, 2, 3, 4, 5].map((i) => sv(shiftP(i)));
+      const flat = () => /^DROP [A-G]b$|^-\d+ STEP$/.test(altPreset() || '');
+      board = fretboard({
+        what: 'shift', on: () => getVal(swP) === 1, preset: () => !!presetShifts(altPreset()),
+        row: (i) => {
+          const pre = presetShifts(altPreset()); const v = shifts()[i];
+          const from = noteName(STD[i]), to = noteName(STD[i] + v, flat());
+          return { v, fine: pre ? 0 : sv(fineP(i)), note: [v ? from : '', to, Math.abs(v) >= 12 ? `${v > 0 ? '+' : '−'}${Math.floor(Math.abs(v) / 12)} oct` : ''] };
+        },
+        set: (i, v) => { toUser(); setSv(shiftP(i), v); }, setFine: (i, c) => { toUser(); setSv(fineP(i), c); },
+      });
+      note = document.createElement('p'); note.className = 'tune-note';
+      const paintNote = () => { const pre = presetShifts(altPreset()); note.textContent = pre ? `${altPreset()} is a built-in tuning. Moving a string copies it to USER and edits that.` : 'USER tuning: tap a fret or drag a string to set its pitch. Drag the scale on the right for cents.'; };
+      extraCells.push(paintNote);
+      const syncChips = () => {
+        const cur = altPreset(); const n = curStep();
+        for (const c of chips) c.setAttribute('aria-pressed', String(c.dataset.step ? n !== null : c.dataset.preset === cur));
+        stepC.textContent = n !== null ? fmtSt(n) : '−1';
+      };
+      extraCells.push(syncChips);
+    } else if (tab === '12') {
+      const sel = tp('12-String Select'); const opts = optsOf(sel);
+      const gEl = document.createElement('span'); gEl.className = 'grp';
+      for (const o of opts) { const c = chip(o, false, () => { setParam(sel, sel.min + opts.indexOf(o)); paintAll(); }); c.dataset.preset = o; chips.push(c); gEl.appendChild(c); }
+      head.appendChild(gEl);
+      extraCells.push(() => { const cur = listText(sel); for (const c of chips) c.setAttribute('aria-pressed', String(c.dataset.preset === cur)); });
+      const shiftP = (i) => tp(`12-String Tuning Shift ${i + 1}`); const fineP = (i) => tp(`12-String Tuning Fine ${i + 1}`);
+      const user = () => { if (listText(sel) !== 'USER') setParam(sel, sel.min + opts.indexOf('USER')); };
+      board = fretboard({
+        what: 'extra string', on: () => getVal(swP) === 1, keepWide: true,
+        row: (i) => { const v = sv(shiftP(i)); const oct = Math.abs(v) >= 12 && v % 12 === 0 ? `${v > 0 ? '+' : '−'}${Math.abs(v) / 12} oct` : v === 0 ? 'unison' : '';
+          return { v, ring: true, fine: sv(fineP(i)), note: ['', noteName(STD[i] + v), oct] }; },
+        set: (i, v) => { user(); setSv(shiftP(i), v); }, setFine: (i, c) => { user(); setSv(fineP(i), c); },
+      });
+      note = document.createElement('p'); note.className = 'tune-note';
+      note.textContent = 'The dot is the added string, the ring is the original. These values are used with USER; editing selects USER.';
+      cells = document.createElement('div'); cells.className = 'tune-cells';
+      for (const [title, name] of [['Level', '12-String Tuning Level'], ['Delay', '12-String Tuning Delay']]) {
+        const h = document.createElement('h3'); h.className = 'ghead'; h.style.gridColumn = '1 / -1'; h.textContent = title; cells.appendChild(h);
+        for (let i = 0; i < 6; i++) cells.appendChild(makeCell(tp(`${name} ${i + 1}`), `String ${i + 1}`));
+      }
+    } else {
+      const depthP = (i) => tp(`String Bend Depth ${i + 1}`);
+      board = fretboard({
+        what: 'bend depth', on: () => getVal(swP) === 1, bend: true,
+        row: (i) => { const v = sv(depthP(i)); return { v, note: [v ? noteName(STD[i]) : '', noteName(STD[i] + v), ''] }; },
+        set: (i, v) => setSv(depthP(i), v),
+      });
+      note = document.createElement('p'); note.className = 'tune-note';
+      note.textContent = 'How far each string bends when the bend control is fully on. The bar runs from the open string to the bent pitch.';
+      cells = document.createElement('div'); cells.className = 'tune-cells one';
+      cells.appendChild(makeCell(tp('String Bend Control'), 'Control'));
+    }
+    wrap.appendChild(board.el);
+    if (note) wrap.appendChild(note);
+    if (cells) wrap.appendChild(cells);
+
+    function paintAll() {
+      const on = getVal(swP) === 1;
+      sw.classList.toggle('on', on); sw.querySelector('span').textContent = on ? 'On' : 'Off';
+      sw.setAttribute('aria-pressed', String(on)); sw.setAttribute('aria-label', `${TABS.find((t) => t[0] === tab)[1]} on or off`);
+      for (const [led, p] of leds) led.classList.toggle('on', getVal(p) === 1);
+      for (const f of extraCells) f();
+      board.paint();
+    }
+    S.updaters.push(paintAll);
+    paintAll();
+  }
 
   // ---------- parameter cells ----------
   const isSwitch = (p) => { const o = optsOf(p); return o && o.length === 2 && /^(OFF|ON)$/i.test(o[0]) && /^(OFF|ON)$/i.test(o[1]); };
