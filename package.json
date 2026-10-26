@@ -4,7 +4,7 @@
   "description": "Unofficial Web MIDI editor for the BOSS GP-10",
   "scripts": {
     "build": "python3 tools/gen_data.py data/gp10-address-map.json tools/editor.template.html index.html",
-    "test": "node tests/editor.test.js && node tests/bench.test.js && node tests/bench-dump.test.js && node tests/bench-map.test.js"
+    "test": "node tests/editor.test.js && node tests/bench.test.js && node tests/bench-dump.test.js && node tests/bench-map.test.js && node tests/usb-probe.test.js"
   },
   "devDependencies": {
     "playwright": "^1.47.0"

@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GP-10 USB Probe</title>
+<style>
+:root {
+  --base: #2a2c30; --cell: #2e3135; --rail: #1e2023; --well: #18191c; --line: #474b52;
+  --ink: #e8e4da; --muted: #9a9da3; --faint: #6d7178; --mustard: #e2a72e; --mustard-ink: #1e1a10;
+  --ok: #7fcf8e; --warn: #ec9840; --bad: #f07a6a;
+  --font: "Barlow Semi Condensed", "Hiragino Sans", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--base); color: var(--ink); font: 500 15px/1.5 var(--font); }
+main { max-width: 880px; margin: 0 auto; padding: 28px 18px 60px; display: grid; gap: 18px; }
+h1 { margin: 0; font-size: 34px; line-height: 1.1; }
+h1 span { color: var(--mustard); }
+h2 { margin: 0 0 8px; font-size: 18px; }
+p { margin: 0; color: var(--muted); max-width: 70ch; }
+.card { background: var(--rail); border: 1px solid #000; border-radius: 8px; padding: 16px 18px; display: grid; gap: 12px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+button { font: 600 14px var(--font); color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 6px; padding: 7px 14px; cursor: pointer; min-height: 36px; }
+button.primary { background: var(--mustard); border-color: var(--mustard); color: var(--mustard-ink); }
+button:disabled { opacity: .4; cursor: default; }
+:focus-visible { outline: 2px solid var(--mustard); outline-offset: 2px; }
+.verdict { border-radius: 6px; padding: 12px 14px; background: var(--cell); border-left: 4px solid var(--faint); }
+.verdict strong { display: block; font-size: 17px; margin-bottom: 2px; }
+.verdict.ok { border-color: var(--ok); } .verdict.ok strong { color: var(--ok); }
+.verdict.warn { border-color: var(--warn); } .verdict.warn strong { color: var(--warn); }
+.verdict.bad { border-color: var(--bad); } .verdict.bad strong { color: var(--bad); }
+.verdict p { color: var(--ink); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #2c2e33; vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+td.mono, .mono { font-family: var(--mono); font-size: 13px; }
+.tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 7px; border-radius: 4px; background: var(--well); color: var(--muted); margin-left: 6px; }
+.tag.good { color: var(--ok); } .tag.block { color: var(--bad); }
+pre { margin: 0; background: var(--well); border-radius: 6px; padding: 10px 12px; font: 12px/1.6 var(--mono); color: #c9c5bb; white-space: pre-wrap; word-break: break-all; max-height: 260px; overflow: auto; }
+ol { margin: 0; padding-left: 20px; color: var(--muted); }
+ol li { margin: 2px 0; }
+.small { font-size: 13px; color: var(--faint); }
+</style>
+</head>
+<body>
+<main>
+  <div>
+    <h1><span>GP-10</span> USB probe</h1>
+  </div>
+  <p>Checks whether a browser could talk to the GP-10 directly over USB (WebUSB), without the BOSS driver. Step 1 only reads the USB descriptors. Step 2 sends one identity request, the same harmless “who are you” message the editor sends when it connects.</p>
+
+  <section class="card" aria-labelledby="s1">
+    <h2 id="s1">1. Read the USB layout</h2>
+    <div class="row">
+      <button class="primary" id="btnPick">Choose GP-10</button>
+      <span class="small" id="env"></span>
+    </div>
+    <div id="verdict"></div>
+    <div id="device"></div>
+  </section>
+
+  <section class="card" aria-labelledby="s2">
+    <h2 id="s2">2. Try MIDI over USB</h2>
+    <p>Claims the interface found in step 1 and sends an identity request as USB-MIDI packets. If the BOSS driver is installed, the system usually owns the interface and this step fails with “Unable to claim interface”. That does not mean WebUSB is impossible, only that the driver got there first.</p>
+    <div class="row"><button id="btnTest" disabled>Send identity request over USB</button></div>
+    <div id="testResult"></div>
+  </section>
+
+  <section class="card" aria-labelledby="s3">
+    <h2 id="s3">Report</h2>
+    <p>Copy this and send it back. It contains the USB descriptors and the test result, nothing else.</p>
+    <div class="row"><button id="btnCopy" disabled>Copy report</button><span class="small" id="copyInfo"></span></div>
+    <pre id="report">No device chosen yet.</pre>
+  </section>
+
+  <section class="card" aria-labelledby="s4">
+    <h2 id="s4">Where to run this</h2>
+    <ol>
+      <li>Chrome or Edge on a Mac or Windows PC with the BOSS driver: shows the layout, step 2 will most likely be blocked by the driver.</li>
+      <li>Chrome on Android with a USB OTG cable: the real test, because there is no driver there.</li>
+      <li>Chrome on a computer without the BOSS driver, or on Linux: also a real test.</li>
+    </ol>
+    <p class="small">iPhone and iPad browsers do not support WebUSB.</p>
+  </section>
+</main>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const h2 = (b) => b.toString(16).toUpperCase().padStart(2, '0');
+  const hx4 = (n) => '0x' + n.toString(16).toUpperCase().padStart(4, '0');
+  const CLASS = { 0x00: 'per interface', 0x01: 'Audio', 0x02: 'CDC', 0x03: 'HID', 0x08: 'Mass storage', 0x0A: 'CDC data', 0xFE: 'Application specific', 0xFF: 'Vendor specific' };
+  const AUDIO_SUB = { 0x01: 'Audio control', 0x02: 'Audio streaming', 0x03: 'MIDI streaming' };
+  // interface classes Chrome refuses to hand to WebUSB
+  const PROTECTED = new Set([0x01, 0x03, 0x08, 0x0B, 0x0E, 0x10, 0xE0]);
+  const state = { device: null, layout: null, candidate: null, test: null };
+
+  if (!('usb' in navigator)) $('env').textContent = 'This browser has no WebUSB. Use Chrome or Edge (desktop or Android).';
+  else if (!window.isSecureContext) $('env').textContent = 'WebUSB needs HTTPS or a local file.';
+  else $('env').textContent = 'WebUSB is available in this browser.';
+
+  function describe(device) {
+    const configs = (device.configurations || []).map((c) => ({
+      value: c.configurationValue, name: c.configurationName || '',
+      interfaces: c.interfaces.map((itf) => ({
+        number: itf.interfaceNumber, claimed: itf.claimed,
+        alternates: itf.alternates.map((a) => ({
+          setting: a.alternateSetting, cls: a.interfaceClass, sub: a.interfaceSubclass, proto: a.interfaceProtocol, name: a.interfaceName || '',
+          endpoints: a.endpoints.map((e) => ({ number: e.endpointNumber, direction: e.direction, type: e.type, packetSize: e.packetSize })),
+        })),
+      })),
+    }));
+    return {
+      product: device.productName || '', manufacturer: device.manufacturerName || '',
+      vendorId: hx4(device.vendorId), productId: hx4(device.productId),
+      usb: `${device.usbVersionMajor}.${device.usbVersionMinor}`, deviceClass: device.deviceClass, configs,
+    };
+  }
+  // find an alternate with bulk (or interrupt) IN and OUT that WebUSB may claim
+  function findCandidate(layout) {
+    let midiClass = null;
+    for (const c of layout.configs) for (const itf of c.interfaces) for (const a of itf.alternates) {
+      const inn = a.endpoints.find((e) => e.direction === 'in' && (e.type === 'bulk' || e.type === 'interrupt'));
+      const out = a.endpoints.find((e) => e.direction === 'out' && (e.type === 'bulk' || e.type === 'interrupt'));
+      if (!inn || !out) continue;
+      const entry = { config: c.value, iface: itf.number, alt: a.setting, cls: a.cls, sub: a.sub, inEp: inn.number, outEp: out.number, inSize: inn.packetSize };
+      if (a.cls === 0xFF) return entry;
+      if (a.cls === 0x01 && a.sub === 0x03) midiClass = entry;
+    }
+    return midiClass;
+  }
+  function renderLayout(layout, cand) {
+    const v = $('verdict');
+    if (!cand) {
+      v.innerHTML = '<div class="verdict bad"><strong>No usable interface found</strong><p>There is no interface with a pair of bulk endpoints, so a WebUSB driver has nothing to talk to.</p></div>';
+    } else if (cand.cls === 0xFF) {
+      v.innerHTML = `<div class="verdict ok"><strong>Looks possible</strong><p>Interface ${cand.iface} is vendor specific with bulk endpoints IN ${cand.inEp} and OUT ${cand.outEp}. WebUSB is allowed to claim vendor-specific interfaces, so the editor could send MIDI over it if the data is in the usual USB-MIDI packet format. Step 2 checks exactly that.</p></div>`;
+    } else {
+      v.innerHTML = `<div class="verdict warn"><strong>Class-compliant MIDI interface</strong><p>Interface ${cand.iface} is a standard USB-MIDI interface. Chrome does not let WebUSB claim audio-class interfaces, but in that case Web MIDI should work without a driver anyway.</p></div>`;
+    }
+    const rows = [];
+    for (const c of layout.configs) for (const itf of c.interfaces) for (const a of itf.alternates) {
+      const clsName = CLASS[a.cls] || `0x${h2(a.cls)}`;
+      const sub = a.cls === 0x01 ? (AUDIO_SUB[a.sub] || `sub 0x${h2(a.sub)}`) : `sub 0x${h2(a.sub)}`;
+      const tag = PROTECTED.has(a.cls) ? '<span class="tag block">blocked for WebUSB</span>' : a.cls === 0xFF ? '<span class="tag good">claimable</span>' : '';
+      const eps = a.endpoints.length ? a.endpoints.map((e) => `${e.direction.toUpperCase()} ${e.number} ${e.type} ${e.packetSize}B`).join('<br>') : '—';
+      rows.push(`<tr><td class="mono">${c.value}/${itf.number}/${a.setting}</td><td>${clsName} <span class="small">${sub}</span>${tag}${a.name ? `<br><span class="small">${a.name}</span>` : ''}</td><td class="mono">${eps}</td></tr>`);
+    }
+    $('device').innerHTML = `<table><tbody>
+      <tr><th>Device</th><td colspan="2">${layout.manufacturer} ${layout.product} <span class="mono small">${layout.vendorId}:${layout.productId}, USB ${layout.usb}</span></td></tr>
+      </tbody></table>
+      <table><thead><tr><th>Config / interface / alt</th><th>Class</th><th>Endpoints</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
+  }
+  function updateReport() {
+    const r = { probe: 'gp10-usb-probe/1', userAgent: navigator.userAgent, device: state.layout, candidate: state.candidate, test: state.test };
+    $('report').textContent = JSON.stringify(r, null, 2);
+    $('btnCopy').disabled = !state.layout;
+  }
+
+  $('btnPick').onclick = async () => {
+    if (!('usb' in navigator)) return;
+    let device;
+    try { device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x0582 }] }); }
+    catch (e) { $('verdict').innerHTML = `<div class="verdict warn"><strong>No device chosen</strong><p>${e.message}</p></div>`; return; }
+    state.device = device; state.layout = describe(device); state.candidate = findCandidate(state.layout); state.test = null;
+    renderLayout(state.layout, state.candidate);
+    $('btnTest').disabled = !state.candidate; $('testResult').innerHTML = '';
+    updateReport();
+  };
+
+  // USB-MIDI 1.0 event packets for a SysEx message on cable 0
+  function sysexToPackets(bytes) {
+    const out = [];
+    for (let i = 0; i < bytes.length; i += 3) {
+      const chunk = bytes.slice(i, i + 3);
+      const last = i + 3 >= bytes.length;
+      const cin = !last ? 0x4 : chunk.length === 1 ? 0x5 : chunk.length === 2 ? 0x6 : 0x7;
+      out.push(cin, ...chunk, ...new Array(3 - chunk.length).fill(0));
+    }
+    return new Uint8Array(out);
+  }
+  function packetsToBytes(data) {
+    const LEN = { 0x4: 3, 0x5: 1, 0x6: 2, 0x7: 3, 0x8: 3, 0x9: 3, 0xA: 3, 0xB: 3, 0xC: 2, 0xD: 2, 0xE: 3, 0xF: 1 };
+    const out = [];
+    for (let i = 0; i + 3 < data.length; i += 4) { const n = LEN[data[i] & 0x0F]; if (n) for (let k = 1; k <= n; k++) out.push(data[i + k]); }
+    return out;
+  }
+  $('btnTest').onclick = async () => {
+    const d = state.device; const c = state.candidate; if (!d || !c) return;
+    const steps = []; const box = $('testResult');
+    const show = (cls, title, body) => { box.innerHTML = `<div class="verdict ${cls}"><strong>${title}</strong><p>${body}</p></div><pre>${steps.join('\n')}</pre>`; };
+    $('btnTest').disabled = true;
+    let claimed = false;
+    try {
+      await d.open(); steps.push('open: ok');
+      if (!d.configuration || d.configuration.configurationValue !== c.config) { await d.selectConfiguration(c.config); steps.push(`selectConfiguration(${c.config}): ok`); }
+      await d.claimInterface(c.iface); claimed = true; steps.push(`claimInterface(${c.iface}): ok`);
+      if (c.alt) { await d.selectAlternateInterface(c.iface, c.alt); steps.push(`selectAlternateInterface(${c.iface}, ${c.alt}): ok`); }
+      const req = [0xF0, 0x7E, 0x7F, 0x06, 0x01, 0xF7];
+      const pk = sysexToPackets(req);
+      const w = await d.transferOut(c.outEp, pk); steps.push(`transferOut(${c.outEp}, ${Array.from(pk, h2).join(' ')}): ${w.status}, ${w.bytesWritten} bytes`);
+      const got = []; const t0 = performance.now();
+      while (performance.now() - t0 < 1500) {
+        const r = await Promise.race([d.transferIn(c.inEp, Math.max(64, c.inSize)), new Promise((res) => setTimeout(() => res(null), 500))]);
+        if (!r) break;
+        const bytes = new Uint8Array(r.data.buffer, r.data.byteOffset, r.data.byteLength);
+        steps.push(`transferIn(${c.inEp}): ${r.status}, ${Array.from(bytes, h2).join(' ')}`);
+        got.push(...packetsToBytes(bytes));
+        if (got.includes(0xF7)) break;
+      }
+      const s = got.indexOf(0xF0); const e = got.indexOf(0xF7, s);
+      const msg = s >= 0 && e > s ? got.slice(s, e + 1) : null;
+      const isReply = msg && msg[1] === 0x7E && msg[3] === 0x06 && msg[4] === 0x02;
+      state.test = { ok: !!isReply, reply: msg ? Array.from(msg, h2).join(' ') : null, steps };
+      if (isReply) show('ok', 'The GP-10 answered over USB', `Reply ${state.test.reply}${msg[5] === 0x41 && msg[6] === 0x05 && msg[7] === 0x03 ? ' — Roland, GP-10 family code.' : '.'} The data uses standard USB-MIDI packets, so a driver-free editor over WebUSB is realistic.`);
+      else show('warn', 'No identity reply', 'The interface was claimed and the request was sent, but nothing that looks like a reply came back. The GP-10 may use a different packet format on this interface.');
+    } catch (e) {
+      steps.push(`error: ${e.name}: ${e.message}`);
+      state.test = { ok: false, error: `${e.name}: ${e.message}`, steps };
+      if (/claim/i.test(e.message) || e.name === 'NetworkError' || e.name === 'InvalidStateError') show('warn', 'The interface is in use', 'Another driver (most likely the BOSS driver) owns this interface, so the browser cannot use it here. Try step 2 on Android or on a computer without the driver.');
+      else if (e.name === 'SecurityError') show('bad', 'Blocked by the browser', `${e.message} The browser does not allow WebUSB to use this interface.`);
+      else show('bad', 'The test failed', e.message);
+    } finally {
+      try { if (claimed) await d.releaseInterface(c.iface); } catch { /* ignore */ }
+      try { await d.close(); } catch { /* ignore */ }
+      $('btnTest').disabled = false;
+      updateReport();
+    }
+  };
+  $('btnCopy').onclick = async () => {
+    try { await navigator.clipboard.writeText($('report').textContent); $('copyInfo').textContent = 'Copied.'; }
+    catch { $('copyInfo').textContent = 'Could not copy. Select the text below and copy it by hand.'; }
+  };
+  window.__probe = { sysexToPackets, packetsToBytes, findCandidate };
+})();
+</script>
+</body>
+</html>

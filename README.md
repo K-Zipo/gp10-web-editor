@@ -43,6 +43,7 @@ MIDI ポートは「GP-10」を選びます（「GP-10 DAW CTRL」ではあり�
 |---|---|
 | `index.html` | エディタ本体（`tools/` から生成。データ埋め込み済みの 1 ファイル） |
 | `bench/index.html` | GP-10 SysEx Bench。Identity / RQ1 / アドレススキャン / ダンプ差分 / ラベル付けの調査用ツール |
+| `bench/usb.html` | GP-10 USB probe。WebUSB でドライバなしに GP-10 と通信できるかを確かめる確認ページ（USB の構成表示と、USB-MIDI パケットでの Identity Request 送受信） |
 | `data/gp10-address-map.json` | GP-10 のアドレスマップ（Setup・System・パッチ全 37 ブロック、名前・範囲・表示変換・選択肢） |
 | `tools/editor.template.html` | エディタのテンプレート |
 | `tools/gen_data.py` | アドレスマップを圧縮してテンプレートに埋め込み、`index.html` を生成 |
