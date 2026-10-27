@@ -257,7 +257,8 @@ button { cursor: pointer; }
 .chip { background: var(--cell); border: 1px solid var(--line); border-radius: 4px; padding: 4px 9px; color: var(--ink); font-weight: 600; min-height: 30px; }
 .chip[aria-pressed="true"] { background: var(--mustard); border-color: var(--mustard); color: var(--mustard-ink); }
 .chip.sq { min-width: 30px; padding: 4px 6px; }
-.tune-head .spacer { flex: 1; }
+.tune-head .spacer, .tune-tabs .spacer { flex: 1; }
+.sysnote { color: var(--mustard); }
 .tune-note { margin: 0; font-size: 13px; color: var(--muted); }
 .fb { display: grid; grid-template-columns: 30px minmax(0, 1fr) 96px 64px 150px; grid-template-rows: repeat(6, 48px); background: var(--cell); border-radius: 4px; overflow: hidden; }
 .fb.off .board, .fb.off .fb-note, .fb.off .fb-fine { opacity: .45; }
@@ -293,7 +294,33 @@ button { cursor: pointer; }
 .tune-cells { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px; }
 .tune-cells .ghead { padding-top: 6px; }
 .tune-cells .cell { min-height: 82px; }
-.tune-cells.one { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
+.tune-cells.one { grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); }
+/* ---------- modeling: string mixer ---------- */
+.smix { grid-column: 1 / -1; display: grid; gap: 6px; margin-bottom: 14px; min-width: 0; }
+.smix-head { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.smix-head .ghead { padding: 0 8px 0 2px; margin-right: auto; }
+.srows { display: grid; grid-template-columns: 30px minmax(0, 1fr) 52px minmax(0, 1fr) 52px; grid-template-rows: auto repeat(6, 40px); column-gap: 10px; align-items: center; }
+.srows .sh { font-size: 12px; color: var(--muted); font-weight: 600; padding-bottom: 4px; }
+.spanel { align-self: stretch; background: var(--rail); border-radius: 4px; position: relative; }
+.spanel.pp .mid { position: absolute; left: 50%; top: 6px; bottom: 6px; width: 1px; background: var(--line); }
+.srows .sh.lr { display: flex; justify-content: space-between; padding-left: 8px; padding-right: 8px; }
+.srows .sh.lr span:first-child, .srows .sh.lr span:last-child { font-family: var(--lcd); color: var(--faint); }
+.sn { font-family: var(--lcd); font-size: 13px; color: var(--faint); text-align: center; }
+.sv { font-family: var(--lcd); font-size: 15px; font-weight: 700; text-align: right; }
+.strk { position: relative; z-index: 1; align-self: stretch; touch-action: pan-y; cursor: ew-resize; outline: none; border-radius: 4px; }
+.strk:focus-visible { box-shadow: inset 0 0 0 2px var(--mustard); }
+.strk .rail { position: absolute; left: 12px; right: 12px; top: 50%; height: 2px; margin-top: -1px; background: var(--line); border-radius: 1px; }
+.lev .fill { position: absolute; left: 12px; top: 50%; height: 12px; margin-top: -6px; width: calc((100% - 24px) * var(--fn, 1)); border-radius: 3px; background: var(--c-model); }
+.lev.drag .fill, .lev:focus-visible .fill { background: #f1bd4f; }
+.lev.mute .fill { display: none; }
+.pan .fill { position: absolute; top: 50%; height: 2px; margin-top: -1px; left: calc(12px + (100% - 24px) * var(--an, .5)); width: calc((100% - 24px) * var(--wn, 0)); background: var(--c-model); opacity: var(--o, 1); }
+.pan .dot { position: absolute; top: 50%; left: calc(12px + (100% - 24px) * var(--fn, .5)); width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--c-model); color: var(--mustard-ink); font: 700 11px/22px var(--lcd); text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,.5); opacity: var(--o, 1); }
+.pan.drag .dot, .pan:focus-visible .dot { opacity: 1; box-shadow: 0 0 0 3px rgba(226,167,46,.3), 0 1px 4px rgba(0,0,0,.5); }
+.pan.mute .dot { background: transparent; border: 1px dashed var(--faint); color: var(--faint); line-height: 20px; }
+@media (max-width: 560px) {
+  .srows { grid-template-columns: 16px minmax(0, 1fr) 30px minmax(0, 1fr) 36px; column-gap: 6px; }
+  .sv { font-size: 13px; }
+}
 @media (max-width: 560px) {
   .fb { grid-template-columns: 22px minmax(0, 1fr) 62px 64px; }
   .fb-shift { display: none; }
@@ -340,6 +367,7 @@ button { cursor: pointer; }
     <button class="tbtn" id="btnExport" disabled>Save .syx</button>
     <button class="tbtn" id="btnImport" disabled>Open .syx</button>
     <input type="file" id="fileSyx" accept=".syx,application/octet-stream" hidden>
+    <input type="file" id="fileSys" accept=".syx,application/octet-stream" hidden>
     <div class="pop">
       <button class="tbtn" id="btnMidi" aria-expanded="false" aria-controls="midiPanel">MIDI</button>
       <div class="pop-panel" id="midiPanel" hidden>
@@ -455,7 +483,7 @@ button { cursor: pointer; }
     const base = a2i(b.a);
     const params = b.p.map(([off, name, min, max, size, view]) => ({ off, name, min, max, size, view, abs: base + off, block: bi }))
       .filter((p) => !/^\(reserved\)$/i.test(p.name));
-    return { name: b.n, short: b.n.replace(/^Patch /, ''), base, len: b.len, params };
+    return { name: b.n, short: b.n.replace(/^Patch /, ''), base, len: b.len, params, sys: !!b.s };
   });
   const B = Object.fromEntries(BLOCKS.map((b) => [b.short, b]));
   const BY_ABS = new Map(BLOCKS.flatMap((b) => b.params).map((p) => [p.abs, p]));
@@ -536,7 +564,8 @@ button { cursor: pointer; }
     MODELING: { title: 'Modeling', ab: 'MODEL', cat: '--c-model', power: ['Modeling', 'Modeling Tone Switch'],
       model: () => [listText(P('Modeling', 'Modeling Type')), subTypeText()].filter(Boolean).join('  '),
       browse: () => [['Instrument', P('Modeling', 'Modeling Type')], ['Model', P(modelBlock(), SUBTYPE[modelBlock()])]],
-      params: () => [...B.Modeling.params.filter((p) => !['Modeling Tone Switch', 'Modeling Type'].includes(p.name)), ...visible(B[modelBlock()]).filter((p) => p.name !== SUBTYPE[modelBlock()])] },
+      strings: true,
+      params: () => [...B.Modeling.params.filter((p) => !['Modeling Tone Switch', 'Modeling Type'].includes(p.name) && !/^String (Level|Pan) \d$/.test(p.name)), ...visible(B[modelBlock()]).filter((p) => p.name !== SUBTYPE[modelBlock()])] },
     NORMAL: { title: 'Normal PU', ab: 'NORMAL', cat: '--c-normal', power: ['Common', 'Normal Pickup Switch'], model: () => 'Normal pickup',
       params: () => ['Normal Pickup Level', 'Normal Pickup Cable Simulation'].map((n) => P('Common', n)) },
     MIXER: { title: 'Mixer', ab: 'MIXER', cat: '--c-patch', model: () => 'Modeling and normal pickup balance',
@@ -556,6 +585,7 @@ button { cursor: pointer; }
       sections: [[/^Alternate Tuning /, 'Alternate tuning'], [/^12-String (Tuning )?/, '12-string'], [/^String Bend /, 'String bend']] },
     CTL: { title: 'Controllers', cat: '--c-patch', util: true, block: 'Controller Function' },
     ASSIGN: { title: 'Assigns', cat: '--c-patch', util: true, block: 'Controller Assign', byNumber: true },
+    GK: { title: 'GK', cat: '--c-patch', util: true, custom: (box) => renderGK(box) },
   };
   const BLOCK_OF = { AMP: 'Amp', FX: 'FX', WAH: 'Wah', CHORUS: 'Chorus', DELAY: 'Delay', REVERB: 'Reverb' };
   function viewModel(key) { const v = V[key]; if (v.model) return v.model(); if (v.typeP) return listText(P(...v.typeP)); return ''; }
@@ -722,8 +752,20 @@ button { cursor: pointer; }
   }
   function applyPacket(r) {
     const base0 = a2i(r.addr);
-    if (base0 < TEMP_BASE || base0 >= TEMP_BASE + SPAN) return;
+    if ((base0 < TEMP_BASE || base0 >= TEMP_BASE + SPAN) && !isSys(base0)) return;
     r.data.forEach((v, i) => S.mem.set(base0 + i, v));
+  }
+  // System area (common, controllers, guitar to MIDI, GK settings 1–3), block by block
+  async function readSystem() {
+    const sys = BLOCKS.filter((b) => b.sys && b.len);
+    const got = new Set();
+    const take = (packets) => { for (const r of packets) { applyPacket(r); const a = a2i(r.addr); for (const b of sys) if (a >= b.base && a < b.base + b.len) got.add(b); } };
+    take(await collect(i2a(SYS_BASE), a2i([0, 0, 0x30, 0]), 140, 600)); // one request; the GP-10 answers block by block
+    for (const b of sys) if (!got.has(b)) take(await collect(i2a(b.base), b.len, 120, 500));
+    const n = got.size;
+    S.sysLoaded = n > 0;
+    if (!S.sysLoaded) log('← No reply to the system settings request');
+    return S.sysLoaded;
   }
   const STRUCTURAL = [['Modeling', 'Modeling Type'], ['FX', 'Fx Select'], ['SYNTH', 'SYNTH Type'], ['Poly Fx', 'Poly Fx Type'], ['E.GTR', 'Type'], ['AC', 'Type'], ['E.BASS', 'Type']];
   const STRUCT_ABS = new Set(STRUCTURAL.map(([b, n]) => P(b, n)).filter(Boolean).map((p) => p.abs));
@@ -928,7 +970,7 @@ button { cursor: pointer; }
   }
   function renderViews() {
     const nav = $('views'); nav.innerHTML = '';
-    for (const key of ['PATCH', 'TUNE', 'CTL', 'ASSIGN']) {
+    for (const key of ['PATCH', 'TUNE', 'CTL', 'ASSIGN', 'GK']) {
       const b = document.createElement('button'); b.type = 'button'; b.textContent = V[key].title;
       b.classList.toggle('sel', S.view === key); b.setAttribute('aria-pressed', String(S.view === key));
       b.onclick = () => select(key);
@@ -971,6 +1013,7 @@ button { cursor: pointer; }
     const box = $('ctls'); box.innerHTML = '';
     const v = V[S.view];
     if (v.custom) { v.custom(box); renderBrowser(); return; }
+    if (v.strings) box.appendChild(stringMixer());
     const list = viewParams(S.view);
     if (!list.length) { const p = document.createElement('p'); p.className = 'none'; p.textContent = 'This block has nothing else to adjust.'; box.appendChild(p); }
     for (const g of groups(list, v)) {
@@ -1290,6 +1333,167 @@ button { cursor: pointer; }
     paintAll();
   }
 
+  // ---------- modeling: per-string level and pan ----------
+  // A horizontal track control: tap/click sets by position, drag moves (touch needs a sideways
+  // start so the page still scrolls), arrows/PageUp/PageDown/Home/End step, double-click resets.
+  function trackControl(el, { get, set, min = 0, max = 100, reset, label, inset = 12 }) {
+    el.tabIndex = 0; el.setAttribute('role', 'slider'); el.setAttribute('aria-label', label);
+    el.setAttribute('aria-valuemin', String(min)); el.setAttribute('aria-valuemax', String(max));
+    const at = (e) => { const b = el.getBoundingClientRect(); const x = (e.clientX - b.left - inset) / Math.max(1, b.width - 2 * inset); return clamp(Math.round(min + x * (max - min)), min, max); };
+    let g = null;
+    el.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      g = { x: e.clientX, y: e.clientY, id: e.pointerId, on: e.pointerType === 'mouse' };
+      const mine = g; onRelease(e.pointerId, () => { if (g === mine) { g = null; el.classList.remove('drag'); } });
+      if (g.on) { try { el.setPointerCapture(e.pointerId); } catch { /* gone */ } el.classList.add('drag'); el.focus({ preventScroll: true }); set(at(e)); e.preventDefault(); }
+    });
+    el.addEventListener('pointermove', (e) => {
+      if (!g || e.pointerId !== g.id) return;
+      if (released(e)) { g = null; el.classList.remove('drag'); return; }
+      if (!g.on) {
+        const dx = e.clientX - g.x, dy = e.clientY - g.y;
+        if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) { if (Math.abs(dy) > 10) g = null; return; }
+        g.on = true; try { el.setPointerCapture(e.pointerId); } catch { /* gone */ } el.classList.add('drag');
+      }
+      set(at(e));
+    });
+    const end = (e) => { if (!g || e.pointerId !== g.id) return; const tap = !g.on; g = null; el.classList.remove('drag'); if (tap && e.type === 'pointerup') { el.focus({ preventScroll: true }); set(at(e)); } };
+    el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+    el.addEventListener('dblclick', () => set(reset));
+    el.addEventListener('keydown', (e) => {
+      const d = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1, PageUp: 10, PageDown: -10 }[e.key];
+      if (d) { e.preventDefault(); set(clamp(get() + d, min, max)); }
+      else if (e.key === 'Home') { e.preventDefault(); set(min); } else if (e.key === 'End') { e.preventDefault(); set(max); }
+      else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); set(reset); }
+    });
+  }
+
+  // Six string lanes in shared panels, one column per parameter set.
+  // col: { title | head (html), p: (i) => param, kind: 'bar' | 'pan', reset, dim?: (i) => 0..1, mute?: (i) => bool }
+  function stringLanes(cols) {
+    const grid = document.createElement('div'); grid.className = 'srows';
+    const cell = (cls, col, row, text) => { const x = document.createElement('div'); x.className = cls; x.style.gridColumn = String(col); x.style.gridRow = String(row); if (text !== undefined) x.textContent = text; grid.appendChild(x); return x; };
+    const lanes = cols.map((c, k) => {
+      const col = 2 + k * 2;
+      const h = cell('sh' + (c.head ? ' lr' : ''), col, 1); if (c.head) h.innerHTML = c.head; else h.textContent = c.title;
+      const panel = cell('spanel' + (c.kind === 'pan' ? ' pp' : ''), col, 2); panel.style.gridRow = '2 / 8';
+      if (c.kind === 'pan') panel.innerHTML = '<span class="mid"></span>';
+      return { c, col, rows: [] };
+    });
+    for (let i = 0; i < 6; i++) {
+      const row = i + 2;
+      cell('sn', 1, row, String(i + 1));
+      for (const ln of lanes) {
+        const { c } = ln; const p = c.p(i);
+        const tr = cell(`strk ${c.kind === 'pan' ? 'pan' : 'lev'}`, ln.col, row);
+        tr.innerHTML = c.kind === 'pan' ? `<span class="rail"></span><span class="fill"></span><span class="dot">${i + 1}</span>` : '<span class="rail"></span><span class="fill"></span>';
+        const val = cell('sv', ln.col + 1, row);
+        trackControl(tr, { get: () => getVal(p) ?? p.min, set: (v) => { setParam(p, v); paint(); }, min: p.min, max: p.max, reset: c.reset ?? p.min, label: `String ${i + 1} ${c.title || 'value'}` });
+        ln.rows.push({ tr, val, p });
+      }
+    }
+    function paint() {
+      for (const ln of lanes) ln.rows.forEach((r, i) => {
+        const v = getVal(r.p) ?? r.p.min; const f = (v - r.p.min) / Math.max(1, r.p.max - r.p.min);
+        r.val.textContent = parts(r.p, v)[0];
+        r.tr.setAttribute('aria-valuenow', String(v)); r.tr.setAttribute('aria-valuetext', display(r.p, v));
+        r.tr.style.setProperty('--fn', String(f));
+        if (ln.c.kind === 'pan') { const a = Math.min(0.5, f), b = Math.max(0.5, f); r.tr.style.setProperty('--an', String(a)); r.tr.style.setProperty('--wn', String(b - a)); }
+        r.tr.style.setProperty('--o', String(ln.c.dim ? ln.c.dim(i) : 1));
+        r.tr.classList.toggle('mute', ln.c.mute ? ln.c.mute(i) : false);
+      });
+    }
+    return { el: grid, paint };
+  }
+
+  function stringMixer() {
+    const lv = (i) => P('Modeling', `String Level ${i + 1}`), pn = (i) => P('Modeling', `String Pan ${i + 1}`);
+    const wrap = document.createElement('div'); wrap.className = 'smix';
+    const head = document.createElement('div'); head.className = 'smix-head';
+    const h = document.createElement('h3'); h.className = 'ghead'; h.textContent = 'Strings'; head.appendChild(h);
+    const act = (text, fn, title) => { const b = chip(text, false, () => { fn(); lanes.paint(); }); b.title = title; head.appendChild(b); };
+    act('All 100', () => { for (let i = 0; i < 6; i++) setParam(lv(i), 100); }, 'Set every string level to 100');
+    act('Center', () => { for (let i = 0; i < 6; i++) setParam(pn(i), 50); }, 'Pan every string to the center');
+    act('Spread', () => { for (let i = 0; i < 6; i++) setParam(pn(i), 75 - i * 10); }, 'Low strings left, high strings right');
+    const level = (i) => getVal(lv(i)) ?? 0;
+    const lanes = stringLanes([
+      { title: 'level', head: null, p: lv, kind: 'bar', reset: 100, mute: (i) => level(i) === 0 },
+      { title: 'pan', head: '<span>L</span><span>Pan</span><span>R</span>', p: pn, kind: 'pan', reset: 50, dim: (i) => 0.35 + 0.65 * (level(i) / 100), mute: (i) => level(i) === 0 },
+    ]);
+    lanes.el.querySelector('.sh').textContent = 'Level';
+    wrap.append(head, lanes.el);
+    S.updaters.push(lanes.paint); lanes.paint();
+    return wrap;
+  }
+
+  // ---------- GK setting (system) ----------
+  const SYS_BASE = a2i([0x10, 0, 0, 0]);
+  const isSys = (abs) => abs >= SYS_BASE && abs < SYS_BASE + a2i([0, 0, 0x30, 0]);
+  const gkBlock = (n) => `System GK Setting ( ${n})`;
+  function gkInUse() {
+    const sel = listText(P('System Common', 'GK Setting Select'));
+    if (!sel) return null;
+    if (sel === 'PATCH SETTING') { const v = getVal(P('Common', 'Patch GK Set Select')); return v === undefined ? null : v + 1; }
+    return +sel;
+  }
+  function renderGK(box) {
+    const wrap = document.createElement('div'); wrap.className = 'tune'; box.appendChild(wrap);
+    const note = document.createElement('p'); note.className = 'tune-note sysnote';
+    note.textContent = 'System settings: these apply to every patch and are written to the GP-10 as you change them. Back them up first.';
+    wrap.appendChild(note);
+    if (!S.sysLoaded) { const p = document.createElement('p'); p.className = 'none'; p.textContent = 'The GP-10 system settings have not been read yet. Press Reload.'; wrap.appendChild(p); return; }
+    const top = document.createElement('div'); top.className = 'tune-cells one';
+    top.append(makeCell(P('System Common', 'GK Connect'), 'GK Connect'), makeCell(P('System Common', 'GK Setting Select'), 'GK setting used'), makeCell(P('Common', 'Patch GK Set Select'), 'This patch uses set'));
+    wrap.appendChild(top);
+    const set = S.gkSet = S.gkSet || +store.get('gkSet', '1');
+    const nav = document.createElement('div'); nav.className = 'tune-tabs'; nav.setAttribute('role', 'tablist');
+    const leds = [];
+    for (let n = 1; n <= 3; n++) {
+      const b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-pressed', String(set === n));
+      const led = document.createElement('i'); b.append(led, document.createTextNode(`GK set ${n}`)); leds.push(led);
+      b.onclick = () => { S.gkSet = n; store.set('gkSet', String(n)); renderInspector(); };
+      nav.appendChild(b);
+    }
+    const tools = document.createElement('span'); tools.className = 'spacer'; nav.appendChild(tools);
+    const bk = chip('Back up system (.syx)', false, exportSystem); bk.title = 'Save all GP-10 system settings to a file';
+    const rs = chip('Restore…', false, () => $('fileSys').click()); rs.title = 'Write system settings from a .syx file back to the GP-10';
+    nav.append(bk, rs);
+    wrap.appendChild(nav);
+    const blk = gkBlock(set); const gp = (n) => P(blk, n);
+    const cells = document.createElement('div'); cells.className = 'tune-cells one';
+    for (const [n, l] of [['Pickup Type', 'Pickup type'], ['Scale', 'Scale'], ['Pickup Phase', 'Phase'], ['Pickup Direction', 'Direction'], ['S1/S2 Position', 'S1/S2 position'], ['Normal PU Gain', 'Normal PU gain'], ['Down Tune Shift', 'Down tune'], ['Piezo Tone Low', 'Piezo low'], ['Piezo Tone High', 'Piezo high']]) cells.appendChild(makeCell(gp(n), l));
+    const lanes = stringLanes([
+      { title: 'Sens', p: (i) => gp(`Pickup Sens${i + 1}`), kind: 'bar', reset: 50 },
+      { title: 'Distance', p: (i) => gp(`Pickup Distance${i + 1}`), kind: 'bar', reset: 20 },
+    ]);
+    lanes.el.querySelectorAll('.sh')[0].textContent = 'Sensitivity';
+    const dh = lanes.el.querySelectorAll('.sh')[1]; dh.textContent = 'Distance (mm)'; dh.title = 'Distance from the bridge saddle to the pickup, per string';
+    const smix = document.createElement('div'); smix.className = 'smix'; smix.appendChild(lanes.el);
+    wrap.append(smix, cells);
+    const paint = () => { const u = gkInUse(); leds.forEach((l, i) => l.classList.toggle('on', u === i + 1)); lanes.paint(); };
+    S.updaters.push(paint); paint();
+  }
+  function exportSystem() {
+    const msgs = [];
+    for (const b of BLOCKS) { if (!b.sys || !b.len) continue; const d = []; for (let i = 0; i < b.len; i++) d.push(S.mem.get(b.base + i) ?? 0); msgs.push(dt1(i2a(b.base), d)); }
+    const blob = new Blob([new Uint8Array(msgs.flat())], { type: 'application/octet-stream' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = `GP-10 system ${new Date().toISOString().slice(0, 10)}.syx`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    last('Saved the system settings');
+  }
+  async function importSystem(file) {
+    const buf = Array.from(new Uint8Array(await file.arrayBuffer()));
+    const msgs = []; let cur = null;
+    for (const x of buf) { if (x === 0xF0) cur = [x]; else if (cur) { cur.push(x); if (x === 0xF7) { msgs.push(cur); cur = null; } } }
+    const recs = msgs.map(parseDT1).filter((r) => r && !r.bad && isSys(a2i(r.addr)));
+    if (!recs.length) { last('No GP-10 system settings found in that file'); return; }
+    if (!confirm(`Write ${recs.length} blocks of system settings from “${file.name}” to the GP-10? This changes settings for every patch.`)) return;
+    enqueue(async () => {
+      for (const r of recs) { send(dt1(r.addr, r.data)); applyPacket(r); await sleep(30); }
+      await readSystem(); renderInspector(); last(`Restored system settings from ${file.name}`);
+    });
+  }
+
   // ---------- parameter cells ----------
   const isSwitch = (p) => { const o = optsOf(p); return o && o.length === 2 && /^(OFF|ON)$/i.test(o[0]) && /^(OFF|ON)$/i.test(o[1]); };
   const isPick = (p) => { const o = optsOf(p); return o && o.length <= 64 && !isSwitch(p); };
@@ -1464,7 +1668,7 @@ button { cursor: pointer; }
   // ---------- .syx ----------
   $('btnExport').onclick = () => {
     const msgs = [];
-    for (const b of BLOCKS) { if (!b.len) continue; const d = []; for (let i = 0; i < b.len; i++) d.push(S.mem.get(b.base + i) ?? 0); msgs.push(dt1(i2a(b.base), d)); }
+    for (const b of BLOCKS) { if (b.sys || !b.len) continue; const d = []; for (let i = 0; i < b.len; i++) d.push(S.mem.get(b.base + i) ?? 0); msgs.push(dt1(i2a(b.base), d)); }
     const bytes = new Uint8Array(msgs.flat());
     const name = ($('patchName').value || 'patch').trim().replace(/[^\w.-]+/g, '_');
     const url = URL.createObjectURL(new Blob([bytes], { type: 'application/octet-stream' }));
@@ -1576,7 +1780,8 @@ button { cursor: pointer; }
       if (!r) { setStatus('No reply from the GP-10. Check the power, the USB cable' + (S.link === 'usb' ? '.' : ' and the MIDI ports.'), 'err'); log('← No reply to the identity request'); return; }
       log(`← Identity: Roland family ${hex(r.slice(6, 8))}${r[6] === 0x05 && r[7] === 0x03 ? ' (GP-10)' : ' (may not be a GP-10)'}`);
       if (r[2] !== 0x7F) $('inDev').value = h2(r[2]);
-      await readCurrentNo(); await readTemp();
+      await readCurrentNo(); await readTemp(); await readSystem();
+      if (S.view === 'GK') renderInspector();
       renderPatchList();
     });
   }
@@ -1600,7 +1805,8 @@ button { cursor: pointer; }
   setLink(HAS_USB && store.get('link', 'midi') === 'usb' ? 'usb' : 'midi');
   window.addEventListener('pagehide', () => { if (S.usb) S.usb.close(); });
   $('selIn').onchange = bind; $('selOut').onchange = bind;
-  $('btnReload').onclick = () => enqueue(async () => { await readCurrentNo(); await readTemp(); last('Reloaded from the GP-10'); });
+  $('btnReload').onclick = () => enqueue(async () => { await readCurrentNo(); await readTemp(); await readSystem(); renderInspector(); last('Reloaded from the GP-10'); });
+  $('fileSys').onchange = (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) importSystem(f); };
   $('btnNames').onclick = () => enqueue(readNames);
   $('btnPatches').onclick = () => { $('patches').classList.add('anim'); $('patches').classList.toggle('open'); };
   $('btnMidi').onclick = (e) => { e.stopPropagation(); const p = $('midiPanel'); p.hidden = !p.hidden; $('btnMidi').setAttribute('aria-expanded', String(!p.hidden)); };

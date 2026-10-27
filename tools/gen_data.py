@@ -38,11 +38,13 @@ def view(p):
     return ['x']
 
 blocks = []
-for b in d['patchBlocks']:
+for b in d['patchBlocks'] + [dict(x, s=1) for x in d['systemBlocks']]:
     params = []
     for p in b['params']:
         params.append([a2i(p['offset']), p['name'], p['min'], p['max'], p['size'], view(p)])
-    blocks.append({'n': b['name'], 'a': [int(x, 16) for x in b['addr'].split()], 'len': b['length'], 'p': params})
+    blk = {'n': b['name'], 'a': [int(x, 16) for x in b['addr'].split()], 'len': b['length'], 'p': params}
+    if b.get('s'): blk['s'] = 1
+    blocks.append(blk)
 
 setup = d['setupBlocks'][0]
 data = {

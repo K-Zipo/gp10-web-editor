@@ -45,7 +45,7 @@ async function hoverAcross(page, box) {
   assert.strictEqual(g1, g0, 'hovering a tile after a stray press changed it');
 
   // 2. a normal drag still works and stops at release
-  await page.mouse.move(gb.x + 30, gb.y + 50); await page.mouse.down(); await page.mouse.move(gb.x + 110, gb.y + 50, { steps: 8 }); await page.mouse.up();
+  await page.mouse.move(gb.x + 30, gb.y + 50); await page.mouse.down(); await page.mouse.move(gb.x + 110, gb.y + 50, { steps: 8 }); await page.mouse.up(); await page.waitForTimeout(80); // let the last value reach the device
   const g2 = await peek(page, GAIN); assert.ok(g2 > g1, 'drag still changes the value');
   await hoverAcross(page, gb); assert.strictEqual(await peek(page, GAIN), g2, 'released drag stays released');
 

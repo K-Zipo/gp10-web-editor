@@ -15,7 +15,16 @@ function buildMock(mapPath, dumpPath) {
     const base = a2i(m[1].trim());
     m[2].trim().split(' ').forEach((v, i) => { mem[base + i] = parseInt(v, 16); });
   }
-  const init = JSON.stringify({ blocks, mem });
+  // System area: plausible defaults (Scale 648 mm, Sens 50, Distance 20 mm…)
+  const sysBlocks = map.systemBlocks.map((b) => ({ base: a2i(b.addr), len: b.length }));
+  const DEF = { 'Scale': 148, 'GK Connect': 0, 'GK Setting Select': 0, 'Tuner Pitch': 5 };
+  for (const b of map.systemBlocks) for (const p of b.params) {
+    let v = DEF[p.name] ?? (/Sens\d/.test(p.name) ? 50 : /Distance\d/.test(p.name) ? 20 : /Gain|Tone (Low|High)/.test(p.name) ? Math.round((p.min + p.max) / 2) : p.min);
+    const at = a2i(p.addr);
+    if (p.size === 1) mem[at] = v; else for (let i = 0; i < p.size; i++) mem[at + i] = (v >> (4 * (p.size - 1 - i))) & 0x0F;
+  }
+  for (const b of sysBlocks) for (let i = 0; i < b.len; i++) if (mem[b.base + i] === undefined) mem[b.base + i] = 0;
+  const init = JSON.stringify({ blocks, sysBlocks, mem });
   return `
 (() => {
   const INIT = ${init};
@@ -45,7 +54,11 @@ function buildMock(mapPath, dumpPath) {
   };
   const dt1 = (addr, data) => { const body = [...addr, ...data]; return [0xF0, 0x41, 0x10, 0, 0, 0, 5, 0x12, ...body, cs(body), 0xF7]; };
   function blocksAt(start, size) {
-    if (start < TEMP) return [];
+    if (start < TEMP) {
+      const out = [];
+      for (const b of INIT.sysBlocks) { const s = Math.max(b.base, start), e = Math.min(b.base + b.len, start + size); if (s < e) { const data = []; for (let a = s; a < e; a++) data.push(mem.get(a) ?? 0); out.push([s, data]); } }
+      return out;
+    }
     const pbase = TEMP + SPAN * Math.floor((start - TEMP) / SPAN); const out = [];
     for (const b of INIT.blocks) {
       const bs = pbase + (b.base - TEMP); const be = bs + b.len;
