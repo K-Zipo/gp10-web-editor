@@ -258,7 +258,11 @@ button { cursor: pointer; }
 .chip[aria-pressed="true"] { background: var(--mustard); border-color: var(--mustard); color: var(--mustard-ink); }
 .chip.sq { min-width: 30px; padding: 4px 6px; }
 .tune-head .spacer, .tune-tabs .spacer { flex: 1; }
-.sysnote { color: var(--mustard); }
+.sysnote { color: var(--mustard); margin: 0; }
+.sysgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px 18px; align-items: start; }
+.sysgrp h3 { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.sysgrp .cell[hidden] { display: none; }
+@media (max-width: 560px) { .sysgrid { grid-template-columns: minmax(0, 1fr); } }
 .tune-note { margin: 0; font-size: 13px; color: var(--muted); }
 .fb { display: grid; grid-template-columns: 30px minmax(0, 1fr) 96px 64px 150px; grid-template-rows: repeat(6, 48px); background: var(--cell); border-radius: 4px; overflow: hidden; }
 .fb.off .board, .fb.off .fb-note, .fb.off .fb-fine { opacity: .45; }
@@ -586,6 +590,7 @@ button { cursor: pointer; }
     CTL: { title: 'Controllers', cat: '--c-patch', util: true, block: 'Controller Function' },
     ASSIGN: { title: 'Assigns', cat: '--c-patch', util: true, block: 'Controller Assign', byNumber: true },
     GK: { title: 'GK', cat: '--c-patch', util: true, custom: (box) => renderGK(box) },
+    SYS: { title: 'System', cat: '--c-patch', util: true, custom: (box) => renderSystem(box) },
   };
   const BLOCK_OF = { AMP: 'Amp', FX: 'FX', WAH: 'Wah', CHORUS: 'Chorus', DELAY: 'Delay', REVERB: 'Reverb' };
   function viewModel(key) { const v = V[key]; if (v.model) return v.model(); if (v.typeP) return listText(P(...v.typeP)); return ''; }
@@ -829,7 +834,8 @@ button { cursor: pointer; }
     last(`${p.name} = ${display(p, v)}`);
     if (!S.flushTimer) S.flushTimer = setTimeout(flush, 25);
     $('pendingInfo').textContent = 'Sending…';
-    if (!S.railRaf) S.railRaf = requestAnimationFrame(() => { S.railRaf = 0; updateRail(); });
+    // next frame: redraw the rail and every visible control, so anything that depends on this value follows
+    if (!S.railRaf) S.railRaf = requestAnimationFrame(() => { S.railRaf = 0; updateRail(); for (const u of S.updaters) u(); });
     return true;
   }
   function flush() {
@@ -970,7 +976,7 @@ button { cursor: pointer; }
   }
   function renderViews() {
     const nav = $('views'); nav.innerHTML = '';
-    for (const key of ['PATCH', 'TUNE', 'CTL', 'ASSIGN', 'GK']) {
+    for (const key of ['PATCH', 'TUNE', 'CTL', 'ASSIGN', 'GK', 'SYS']) {
       const b = document.createElement('button'); b.type = 'button'; b.textContent = V[key].title;
       b.classList.toggle('sel', S.view === key); b.setAttribute('aria-pressed', String(S.view === key));
       b.onclick = () => select(key);
@@ -1438,9 +1444,7 @@ button { cursor: pointer; }
   }
   function renderGK(box) {
     const wrap = document.createElement('div'); wrap.className = 'tune'; box.appendChild(wrap);
-    const note = document.createElement('p'); note.className = 'tune-note sysnote';
-    note.textContent = 'System settings: these apply to every patch and are written to the GP-10 as you change them. Back them up first.';
-    wrap.appendChild(note);
+    sysHeader(wrap);
     if (!S.sysLoaded) { const p = document.createElement('p'); p.className = 'none'; p.textContent = 'The GP-10 system settings have not been read yet. Press Reload.'; wrap.appendChild(p); return; }
     const top = document.createElement('div'); top.className = 'tune-cells one';
     top.append(makeCell(P('System Common', 'GK Connect'), 'GK Connect'), makeCell(P('System Common', 'GK Setting Select'), 'GK setting used'), makeCell(P('Common', 'Patch GK Set Select'), 'This patch uses set'));
@@ -1454,10 +1458,6 @@ button { cursor: pointer; }
       b.onclick = () => { S.gkSet = n; store.set('gkSet', String(n)); renderInspector(); };
       nav.appendChild(b);
     }
-    const tools = document.createElement('span'); tools.className = 'spacer'; nav.appendChild(tools);
-    const bk = chip('Back up system (.syx)', false, exportSystem); bk.title = 'Save all GP-10 system settings to a file';
-    const rs = chip('Restore…', false, () => $('fileSys').click()); rs.title = 'Write system settings from a .syx file back to the GP-10';
-    nav.append(bk, rs);
     wrap.appendChild(nav);
     const blk = gkBlock(set); const gp = (n) => P(blk, n);
     const cells = document.createElement('div'); cells.className = 'tune-cells one';
@@ -1494,6 +1494,84 @@ button { cursor: pointer; }
     });
   }
 
+  // ---------- other system settings ----------
+  const sysAt = (blk, off) => (B[blk] ? B[blk].params.find((p) => p.off === off) : null);
+  function sysHeader(wrap) {
+    const note = document.createElement('p'); note.className = 'tune-note sysnote';
+    note.textContent = 'System settings: these apply to every patch and are written to the GP-10 as you change them. Back them up first.';
+    const row = document.createElement('div'); row.className = 'tune-head';
+    const sp = document.createElement('span'); sp.className = 'spacer';
+    const bk = chip('Back up system (.syx)', false, exportSystem); bk.title = 'Save all GP-10 system settings to a file';
+    const rs = chip('Restore…', false, () => $('fileSys').click()); rs.title = 'Write system settings from a .syx file back to the GP-10';
+    row.append(note, sp, bk, rs); wrap.appendChild(row);
+  }
+  // A titled group of tiles; show(p) can hide tiles that do not apply right now.
+  function sysGroup(title, items, show) {
+    const g = document.createElement('section'); g.className = 'sysgrp';
+    const h = document.createElement('h3'); h.textContent = title; g.appendChild(h);
+    const cells = document.createElement('div'); cells.className = 'tune-cells one'; g.appendChild(cells);
+    const els = items.filter(([p]) => p).map(([p, label]) => { const c = makeCell(p, label); cells.appendChild(c); return [p, c]; });
+    const upd = () => { if (show) for (const [p, c] of els) c.hidden = !show(p); };
+    S.updaters.push(upd); upd();
+    return g;
+  }
+  function renderSystem(box) {
+    const wrap = document.createElement('div'); wrap.className = 'tune'; box.appendChild(wrap);
+    const tab = S.sysTab = S.sysTab || store.get('sysTab', 'general');
+    const nav = document.createElement('div'); nav.className = 'tune-tabs'; nav.setAttribute('role', 'tablist');
+    for (const [key, title] of [['general', 'General'], ['ctl', 'Controllers'], ['g2m', 'Guitar to MIDI']]) {
+      const b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-pressed', String(tab === key)); b.textContent = title;
+      b.onclick = () => { S.sysTab = key; store.set('sysTab', key); renderInspector(); };
+      nav.appendChild(b);
+    }
+    wrap.appendChild(nav);
+    sysHeader(wrap);
+    if (!S.sysLoaded) { const p = document.createElement('p'); p.className = 'none'; p.textContent = 'The GP-10 system settings have not been read yet. Press Reload.'; wrap.appendChild(p); return; }
+    const grid = document.createElement('div'); grid.className = 'sysgrid'; wrap.appendChild(grid);
+    const C = (n) => P('System Common', n);
+    if (tab === 'general') {
+      grid.append(
+        sysGroup('Output', [[C('Output Select'), 'Output select']]),
+        sysGroup('Tuner', [[C('Tuner Pitch'), 'Pitch (Hz)'], [C('Tuner Sound'), 'Sound while tuning'], [C('Tuner Function'), 'Tuner']]),
+        sysGroup('USB audio', [[C('USB Audio In Level'), 'Input level'], [C('USB Audio Out Level'), 'Output level']]),
+        sysGroup('Patch range', [[C('Patch Extent Switch'), 'Limit patches'], [C('Patch Extent Start'), 'First patch'], [C('Patch Extent End'), 'Last patch']],
+          (p) => p.name === 'Patch Extent Switch' || getVal(C('Patch Extent Switch')) === 1),
+        sysGroup('Power', [[C('Auto Off'), 'Auto off']]),
+      );
+    } else if (tab === 'ctl') {
+      const CF = 'System Controller Function';
+      // footswitch-like controllers: function, mode, and the number the function needs
+      const sw = (title, fn, mode, up, down, sel) => {
+        const fp = sysAt(CF, fn);
+        return sysGroup(title, [[fp, 'Function'], [sysAt(CF, mode), 'Mode'], [up != null && sysAt(CF, up), 'Patches up'], [down != null && sysAt(CF, down), 'Patches down'], [sel != null && sysAt(CF, sel), 'Go to patch']],
+          (p) => { const f = listText(fp); if (p.off === up) return f === 'PATCH UP'; if (p.off === down) return f === 'PATCH DOWN'; if (p.off === sel) return f === 'PATCH SEL'; return true; });
+      };
+      for (let i = 0; i < 4; i++) grid.appendChild(sw(`CTL${i + 1}`, i, 4 + i, 8 + i, 12 + i, 16 + i));
+      for (let i = 0; i < 2; i++) grid.appendChild(sw(`GK S${i + 1}`, 0x14 + i, 0x16 + i, 0x18 + i, 0x1A + i, 0x1C + i));
+      grid.append(
+        sysGroup('EXP pedal switch', [[sysAt(CF, 0x1E), 'Function'], [sysAt(CF, 0x1F), 'Mode']]),
+        sysGroup('Pedals', [[sysAt(CF, 0x20), 'EXP (switch off)'], [sysAt(CF, 0x21), 'EXP (switch on)'], [sysAt(CF, 0x22), 'EXP2'], [sysAt(CF, 0x23), 'GK volume']]),
+        sysGroup('Assign', [[sysAt(CF, 0x24), 'Hold across patches']]),
+      );
+      const hint = document.createElement('p'); hint.className = 'tune-note'; hint.textContent = 'PATCH SETTING uses the controller setting stored in each patch (Controllers tab).';
+      wrap.appendChild(hint);
+    } else {
+      const G = (n) => P('System Guitar to MIDI', `Guitar to MIDI ${n}`);
+      grid.append(
+        sysGroup('Guitar to MIDI', [[G('Switch'), 'Guitar to MIDI'], [G('Mode'), 'Mode'], [G('String CH'), 'Channel (string 1)'], [G('Chromatic'), 'Chromatic']]),
+        sysGroup('Pitch bend', [[G('Pedal Bend'), 'Pedal bend'], [G('Bend Range'), 'Bend range'], [G('Hold Pedal'), 'Hold pedal']]),
+        sysGroup('Dynamics', [[G('Dynamics'), 'Dynamics'], [G('Play Feel'), 'Play feel'], [G('Low Velo Cut'), 'Low velocity cut'], [G('Data Thin'), 'Data thin']]),
+      );
+      const ch = document.createElement('p'); ch.className = 'tune-note'; wrap.appendChild(ch);
+      const upd = () => {
+        const mode = listText(G('Mode')); const v = getVal(G('String CH')); if (v === undefined) return;
+        const base = +parts(G('String CH'), v)[0];
+        ch.textContent = mode === 'MONO' ? `All strings send on channel ${base}.` : `Strings 1–6 send on channels ${base}–${Math.min(16, base + 5)}.`;
+      };
+      S.updaters.push(upd); upd();
+    }
+  }
+
   // ---------- parameter cells ----------
   const isSwitch = (p) => { const o = optsOf(p); return o && o.length === 2 && /^(OFF|ON)$/i.test(o[0]) && /^(OFF|ON)$/i.test(o[1]); };
   const isPick = (p) => { const o = optsOf(p); return o && o.length <= 64 && !isSwitch(p); };
@@ -1526,7 +1604,7 @@ button { cursor: pointer; }
       const f = v === undefined ? 0 : (v - p.min) / Math.max(1, span);
       if (kind === 'list') {
         const st = el.querySelector('.steps');
-        if (opts.length <= 16) {
+        if (!st) { /* already turned into a bar for a long list */ } else if (opts.length <= 16) {
           if (st.childElementCount !== opts.length) st.innerHTML = '<i></i>'.repeat(opts.length);
           Array.from(st.children).forEach((x, i) => x.classList.toggle('on', i === v - p.min));
         } else { st.outerHTML = '<span class="bar"><i></i></span>'; }
@@ -1781,7 +1859,7 @@ button { cursor: pointer; }
       log(`← Identity: Roland family ${hex(r.slice(6, 8))}${r[6] === 0x05 && r[7] === 0x03 ? ' (GP-10)' : ' (may not be a GP-10)'}`);
       if (r[2] !== 0x7F) $('inDev').value = h2(r[2]);
       await readCurrentNo(); await readTemp(); await readSystem();
-      if (S.view === 'GK') renderInspector();
+      if (S.view === 'GK' || S.view === 'SYS') renderInspector();
       renderPatchList();
     });
   }

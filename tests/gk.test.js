@@ -56,7 +56,7 @@ async function open(browser, viewport, ctxOpts = {}) {
   assert.deepStrictEqual(inUse3, [false, false, true]);
 
   // backup → change → restore
-  const [dl] = await Promise.all([page.waitForEvent('download'), page.locator('.tune-tabs .chip', { hasText: 'Back up' }).click()]);
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.locator('.tune-head .chip', { hasText: 'Back up' }).click()]);
   const file = path.join(OUT, 'gk-system.syx'); await dl.saveAs(file);
   const bytes = fs.readFileSync(file); console.log('backup bytes', bytes.length, '| file', dl.suggestedFilename());
   assert.strictEqual(bytes.length, (12 + 37 + 11 + 22 * 3) + 6 * 14);
